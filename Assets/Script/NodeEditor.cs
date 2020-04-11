@@ -13,7 +13,7 @@ public class NodeEditor : EditorWindow
     Vector3 mousePosition;
     CustomGraph customGraph;
     /// <summary>
-    /// 是否点击在窗口上
+    /// 是否点击在窗口上,false表示点击在背景上
     /// </summary>
     private bool clickedOnwindow = false;
     /// <summary>
@@ -25,6 +25,14 @@ public class NodeEditor : EditorWindow
     /// </summary>
     private GUISkin skin;
     private List<int> listDeleteNodes = new List<int>();
+    /// <summary>
+    /// 画线
+    /// </summary>
+    public bool makeTransitionMode = false;
+    /// <summary>
+    /// 鼠标按下初始位置.
+    /// </summary>
+    public Vector2 initMousePos = Vector2.zero;
     #endregion
 
     [MenuItem("自定义/节点")]
@@ -68,6 +76,9 @@ public class NodeEditor : EditorWindow
     /// </summary>
     void OnGUI()
     {
+        Event e = Event.current;
+        mousePosition = e.mousePosition;
+
         DrawBackground();
 
         EditorGUILayout.LabelField("", GUILayout.Width(100));
@@ -79,14 +90,27 @@ public class NodeEditor : EditorWindow
             return;
         }
         
+        MouseClickEvent.MouseLeftClick(e, (e1) => {
+            MouseClickEvent.MouseDownEvent(e, (e2) => {
+                makeTransitionMode = false;
+                ClickedOnWindow(e);
+                
+            });
+        });
+
+        if (selectedNode != null && makeTransitionMode)
+        {
+            Rect mouseRect = new Rect(e.mousePosition.x, e.mousePosition.y, 10, 10);
+            DrawNodeCurve(selectedNode.windowRect, mouseRect, Color.blue);
+        }
+
         //绘画窗口
         this.DrawChildWindow(()=> {
             for (int i = 0; i < customGraph.windows.Count; i++)
             {
                 BaseNode b = customGraph.windows[i];
-
-                b.windowRect = GUI.Window(b.id, b.windowRect,
-                           DrawNodeWindow, b.windowTitle+": "+ b.id);
+                b.windowRect = GUI.Window(i, b.windowRect,
+                           DrawNodeWindow, b.windowTitle + ": " + b.id);
             }
         });
         
@@ -105,15 +129,20 @@ public class NodeEditor : EditorWindow
             }
         }
 
-        Event e = Event.current;
-        mousePosition = e.mousePosition;
-
-        UserInput(e);
+        //在画线时,不响应其他的事件
+        if (makeTransitionMode==false)
+        {
+            UserInput(e);
+        }
+        
+        //反复刷新.
+        Repaint();
     }
 
     //绘画窗口函数
     void DrawNodeWindow(int id)
     {
+        customGraph.windows[id].DrawWindow();
         //创建一个GUI Button
         if (GUILayout.Button("Link"))
         {
@@ -138,29 +167,45 @@ public class NodeEditor : EditorWindow
     /// <param name="e"></param>
     void UserInput(Event e)
     {
-        MouseClickEvent.MouseLeftClick(e,()=>{
-            SelectWindow(e);
-        });
-
-        MouseClickEvent.MouseRightClick(e,()=> {
-            SelectWindow(e);
+        MouseClickEvent.MouseRightClick(e,(e1)=> {
+            ClickedOnWindow(e1);
 
             if (!clickedOnwindow)
             {
-                AddNewNode(e);
+                AddNewNode(e1);
             }
             else
             {
-                ModifyNode(e);
+                ModifyNode(e1);
             }
+        });
+
+        //拖拽全部节点(整个背景窗口).
+        MouseClickEvent.MouseCenterClick(e,(e1)=> {
+            MouseClickEvent.MouseDownEvent(e1, (e2) => {
+                initMousePos = e.mousePosition;
+            });
+
+            MouseClickEvent.MouseDragEvent(e1,(e2)=> {
+                Vector2 deltaMousePos = e2.mousePosition - initMousePos;
+                for (int i = 0; i < customGraph.windows.Count; i++)
+                {
+                    BaseNode b = customGraph.windows[i];
+                    b.windowRect.x += deltaMousePos.x;
+                    b.windowRect.y += deltaMousePos.y;
+                }
+
+                initMousePos = e.mousePosition;
+                Repaint();
+            });
         });
     }
 
     /// <summary>
-    /// 选中窗口.
+    /// 判断是否点击在窗口上
     /// </summary>
     /// <param name="e"></param>
-    public void SelectWindow(Event e)
+    public bool ClickedOnWindow(Event e)
     {
         clickedOnwindow = false;
         selectedNode = null;
@@ -174,6 +219,8 @@ public class NodeEditor : EditorWindow
                 break;
             }
         }
+
+        return clickedOnwindow;
     }
 
     public void AddNewNode(Event e)
@@ -187,12 +234,13 @@ public class NodeEditor : EditorWindow
 
         });
 
-        //menu.AddMenuItem(MouseMenuItem.CreateMenuItem(new GUIContent("Add State"), false, () =>
-        //{
-        //    Debug.LogWarning("Add State");
-        //    Success = true;
-        //    BaseNode baseNode = customGraph.AddNodeOnGraph(null, 150, 100, "TestNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
-        //}));
+        menu.AddItem(new GUIContent("Add MenuItem"), false, () =>
+        {
+            Debug.LogWarning("Add State");
+            var menuNode= ScriptableObject.CreateInstance<MenuNode>();
+            BaseNode baseNode = customGraph.AddNodeOnGraph(menuNode, 150, 100, "MenuItem", new Vector3(e.mousePosition.x, e.mousePosition.y));
+
+        });
 
         menu.AddItem(new GUIContent("Add Comment"), false, null);
         menu.ShowAsContext();
@@ -204,8 +252,7 @@ public class NodeEditor : EditorWindow
         GenericMenu menu = new GenericMenu();
         menu.AddItem(new GUIContent("delete All Node"), false, ()=> {
             listDeleteNodes.Clear();
-            listDeleteNodes.AddRange(selectedNode.childNodes);
-            listDeleteNodes.Add(selectedNode.id);
+            SearchChilds(selectedNode);
 
             if (selectedNode.ParentNode != 0)
             {
@@ -222,8 +269,30 @@ public class NodeEditor : EditorWindow
             selectedNode.childNodes.Add(baseNode.id);
             baseNode.ParentNode = selectedNode.id;
         });
+
+        menu.AddItem(new GUIContent("画线"), false, () => {
+            makeTransitionMode = true;
+        });
         menu.ShowAsContext();
         //e.Use();
+    }
+
+    /// <summary>
+    /// 遍历子节点
+    /// </summary>
+    /// <param name="node"></param>
+    public void SearchChilds(BaseNode node)
+    {
+        listDeleteNodes.Add(node.id);
+        if (node.childNodes.Count>0)
+        {
+            listDeleteNodes.AddRange(node.childNodes);
+            foreach (var item in node.childNodes)
+            {
+                var childNode = customGraph.GetBaseNodeById(item);
+                SearchChilds(childNode);
+            }
+        }
     }
 
     /// <summary>

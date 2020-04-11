@@ -11,26 +11,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b1e81f1b6234eb4f9cce83a278cef01, type: 3}
   m_Name: CustomGraph
   m_EditorClassIdentifier: 
-  windows:
-  - id: 2
-    drawNode: {fileID: 0}
-    windowRect:
-      serializedVersion: 2
-      x: 246
-      y: 250
-      width: 150
-      height: 100
-    windowTitle: TestNode
-    childNodes: 
-    ParentNode: 0
-  - id: 7
-    drawNode: {fileID: 0}
-    windowRect:
-      serializedVersion: 2
-      x: 1020
-      y: 181
-      width: 150
-      height: 100
-    windowTitle: TestNode
-    childNodes: 
-    ParentNode: 5
+  windows: []

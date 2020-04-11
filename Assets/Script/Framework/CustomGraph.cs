@@ -9,15 +9,9 @@ public class CustomGraph : ScriptableObject
 {
     [SerializeField]
     public List<BaseNode> windows = new List<BaseNode>();
-    [SerializeField]
-    public int idCount
-    {
-        get
-        {
-            return windows.Count+1;
-        }
-    }
-
+    //[SerializeField]
+    private int idCount = 1;
+    
     public BaseNode AddNodeOnGraph(DrawNode type, float width, float height, string title, Vector3 pos)
     {
         BaseNode baseNode = new BaseNode();
@@ -29,6 +23,7 @@ public class CustomGraph : ScriptableObject
         baseNode.windowRect.y = pos.y;
         windows.Add(baseNode);
         baseNode.id = idCount;
+        idCount++;
         return baseNode;
     }
 

@@ -29,11 +29,11 @@ public class MouseClickEvent
     /// </summary>
     /// <param name="e"></param>
     /// <param name="action"></param>
-    public static void MouseCenterClick(Event e, Action action)
+    public static void MouseCenterClick(Event e, Action<Event> action)
     {
         if (e.button == (int)MouseEnum.CenterClick)
         {
-            action();
+            action(e);
         }
     }
 
@@ -42,11 +42,11 @@ public class MouseClickEvent
     /// </summary>
     /// <param name="e"></param>
     /// <param name="action"></param>
-    public static void MouseLeftClick(Event e, Action action)
+    public static void MouseLeftClick(Event e, Action<Event> action)
     {
-        if (e.button == (int)MouseEnum.CenterClick)
+        if (e.button == (int)MouseEnum.LeftClick)
         {
-            action();
+            action(e);
         }
     }
 
@@ -55,11 +55,11 @@ public class MouseClickEvent
     /// </summary>
     /// <param name="e"></param>
     /// <param name="action"></param>
-    public static void MouseRightClick(Event e, Action action)
+    public static void MouseRightClick(Event e, Action<Event> action)
     {
         if (e.button == (int)MouseEnum.RightClick)
         {
-            action();
+            action(e);
         }
     }
 
@@ -68,11 +68,24 @@ public class MouseClickEvent
     /// </summary>
     /// <param name="e"></param>
     /// <param name="action"></param>
-    private static void MouseDownEvent(Event e,Action<Event> action)
+    public static void MouseDownEvent(Event e,Action<Event> action)
     {
         if (e.type == EventType.MouseDown)
         {
             action(e);
         }
     } 
+
+    /// <summary>
+    /// 鼠标拖拽事件
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="action"></param>
+    public static void MouseDragEvent(Event e, Action<Event> action)
+    {
+        if (e.type == EventType.MouseDrag)
+        {
+            action(e);
+        }
+    }
 }
