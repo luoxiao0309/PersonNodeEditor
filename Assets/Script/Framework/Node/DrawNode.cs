@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public abstract class DrawNode : ScriptableObject
 {
     public abstract void DrawWindow(BaseNode b);

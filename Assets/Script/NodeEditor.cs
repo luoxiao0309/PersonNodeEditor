@@ -13,17 +13,9 @@ public class NodeEditor : EditorWindow
     Vector3 mousePosition;
     CustomGraph customGraph;
     /// <summary>
-    /// 是否点击在窗口上,false表示点击在背景上
-    /// </summary>
-    private bool clickedOnwindow = false;
-    /// <summary>
     /// 选中窗口
     /// </summary>
     private BaseNode selectedNode;
-    /// <summary>
-    /// 
-    /// </summary>
-    private GUISkin skin;
     private List<int> listDeleteNodes = new List<int>();
     /// <summary>
     /// 画线
@@ -33,6 +25,29 @@ public class NodeEditor : EditorWindow
     /// 鼠标按下初始位置.
     /// </summary>
     public Vector2 initMousePos = Vector2.zero;
+    /// <summary>
+    /// 重设大小Icon
+    /// </summary>
+    public GUIContent _resizeIcon;
+    /// <summary>
+    /// 输入点样式
+    /// </summary>
+    private GUIStyle inPointStyle;
+    /// <summary>
+    /// 输出点样式.
+    /// </summary>
+    private GUIStyle outPointStyle;
+    /// <summary>
+    /// 节点样式
+    /// </summary>
+    private GUIStyle nodeStyle;
+    /// <summary>
+    /// 选中节点样式
+    /// </summary>
+    private GUIStyle selectedNodeStyle;
+
+    private ConnectionPoint selectedInPoint;
+    private ConnectionPoint selectedOutPoint;
     #endregion
 
     [MenuItem("自定义/节点")]
@@ -43,6 +58,10 @@ public class NodeEditor : EditorWindow
 
     private void OnEnable()
     {
+        //EditorUtility.l
+        Texture2D resizeHandle = EditorGUIUtility.Load("ResizeHandle.png") as Texture2D;
+        //Texture2D resizeHandle = AssetDatabase.LoadAssetAtPath("Assets/Node/Textures/PNG/ResizeHandle.png", typeof(Texture2D)) as Texture2D;
+        _resizeIcon = new GUIContent(resizeHandle);
         //if (graphNode == null)
         //{
         //    graphNode = CreateInstance<GraphNode>();
@@ -52,6 +71,49 @@ public class NodeEditor : EditorWindow
         //customGraph = Resources.Load("CustomGraph") as CustomGraph;
         //style = settings.skin.GetStyle("window");
         //activeStyle = settings.activeSkin.GetStyle("window");
+
+        //inPointStyle = new GUIStyle();
+        //inPointStyle.normal.background = EditorGUIUtility.Load("joinL.png") as Texture2D;
+        //inPointStyle.active.background = EditorGUIUtility.Load("joinL.png") as Texture2D;
+        //inPointStyle.border = new RectOffset(4, 4, 12, 12);
+
+        //StyleHelper.inStyle = inPointStyle;
+
+        //outPointStyle = new GUIStyle();
+        //outPointStyle.normal.background = EditorGUIUtility.Load("joinR.png") as Texture2D;
+        //outPointStyle.active.background = EditorGUIUtility.Load("joinR.png") as Texture2D;
+        //outPointStyle.border = new RectOffset(4, 4, 12, 12);
+
+        #region 节点样式
+        //nodeStyle = new GUIStyle();
+        //nodeStyle.normal.background = EditorGUIUtility.Load(
+        //    "builtin skins/darkskin/images/node1.png") as Texture2D;
+        //nodeStyle.border = new RectOffset(12, 12, 12, 12);
+
+        nodeStyle = new GUIStyle();
+        //nodeStyle.normal.background = EditorGUIUtility.Load("boxGround.png") as Texture2D;
+        nodeStyle.normal.background = Resources.Load("boxGround") as Texture2D;
+        nodeStyle.border = new RectOffset(12, 12, 12, 12);
+
+        inPointStyle = new GUIStyle();
+        inPointStyle.normal.background = EditorGUIUtility.Load(
+            "builtin skins/darkskin/images/btn left.png") as Texture2D;
+        inPointStyle.active.background = EditorGUIUtility.Load(
+            "builtin skins/darkskin/images/btn left on.png") as Texture2D;
+        inPointStyle.border = new RectOffset(4, 4, 12, 12);
+
+        outPointStyle = new GUIStyle();
+        outPointStyle.normal.background = EditorGUIUtility.Load(
+            "builtin skins/darkskin/images/btn right.png") as Texture2D;
+        outPointStyle.active.background = EditorGUIUtility.Load(
+            "builtin skins/darkskin/images/btn right on.png") as Texture2D;
+        outPointStyle.border = new RectOffset(4, 4, 12, 12);
+
+        selectedNodeStyle = new GUIStyle();
+        selectedNodeStyle.normal.background = EditorGUIUtility.Load(
+            "builtin skins/darkskin/images/node1 on.png") as Texture2D;
+        selectedNodeStyle.border = new RectOffset(12, 12, 12, 12);
+        #endregion
     }
 
     //private void Update()
@@ -80,61 +142,86 @@ public class NodeEditor : EditorWindow
         mousePosition = e.mousePosition;
 
         DrawBackground();
+        DrawToolbar();
 
         EditorGUILayout.LabelField("", GUILayout.Width(100));
         EditorGUILayout.LabelField("Assign Graph", GUILayout.Width(100));
         customGraph = EditorGUILayout.ObjectField(customGraph, typeof(CustomGraph), false, GUILayout.Width(200)) as CustomGraph;
-
+        
         if (customGraph==null)
         {
             return;
         }
         
-        MouseClickEvent.MouseLeftClick(e, (e1) => {
-            MouseClickEvent.MouseDownEvent(e, (e2) => {
+        MouseClickEvent.MouseLeftClick(e, (e1) =>
+        {
+            MouseClickEvent.MouseDownEvent(e, (e2) =>
+            {
                 makeTransitionMode = false;
                 ClickedOnWindow(e);
-                
             });
         });
 
+        #region Window 窗口连线.
         if (selectedNode != null && makeTransitionMode)
         {
             Rect mouseRect = new Rect(e.mousePosition.x, e.mousePosition.y, 10, 10);
-            DrawNodeCurve(selectedNode.windowRect, mouseRect, Color.blue);
+            DrawNodeCurve(selectedNode.WindowRect, mouseRect, Color.blue);
         }
-
-        //绘画窗口
+        #endregion
+        DrawConnectionLine(e);
+        
+        //绘画窗口(绘制Windows窗口会卡 GUI.changed, 所以你只能不断刷.)
         this.DrawChildWindow(()=> {
             for (int i = 0; i < customGraph.windows.Count; i++)
             {
                 BaseNode b = customGraph.windows[i];
-                b.windowRect = GUI.Window(i, b.windowRect,
+                if (b.NodeType==NodeType.Window)
+                {
+                    b.WindowRect = GUI.Window(i, b.WindowRect,
                            DrawNodeWindow, b.windowTitle + ": " + b.id);
+                }
+                else
+                {
+                    BoxBaseNode boxBaseNode = new BoxBaseNode(inPointStyle, outPointStyle, OnClickInPoint, OnClickOutPoint);
+                    boxBaseNode = b as BoxBaseNode;
+
+                    boxBaseNode.nodeStyle = nodeStyle;
+                    boxBaseNode.DrawWindow();
+                }
             }
         });
-        
+
         //绘制连线
         for (int i = 0; i < customGraph.windows.Count; i++)
         {
             BaseNode b = customGraph.windows[i];
-            
-            if (b.childNodes.Count>0)
+
+            //绘制box矩形连线.
+            if (b.connections.Count>0)
             {
-                foreach (var nodeId in b.childNodes)
+
+            }
+            else
+            {
+                //绘制窗口连线
+                if (b.childNodes.Count > 0)
                 {
-                    var item = customGraph.GetBaseNodeById(nodeId);
-                    DrawNodeCurve(b.windowRect, item.windowRect, Color.blue);
+                    foreach (var nodeId in b.childNodes)
+                    {
+                        var item = customGraph.GetBaseNodeById(nodeId);
+                        DrawNodeCurve(b.WindowRect, item.WindowRect, Color.blue);
+                    }
                 }
             }
         }
 
         //在画线时,不响应其他的事件
-        if (makeTransitionMode==false)
+        if (makeTransitionMode == false)
         {
             UserInput(e);
         }
-        
+
         //反复刷新.
         Repaint();
     }
@@ -142,14 +229,105 @@ public class NodeEditor : EditorWindow
     //绘画窗口函数
     void DrawNodeWindow(int id)
     {
-        customGraph.windows[id].DrawWindow();
-        //创建一个GUI Button
-        if (GUILayout.Button("Link"))
-        {
-            Debug.Log("Clikc Link Button: "+id);
-        }
+        var window = customGraph.windows[id];
+        window.DrawWindow();
+        
+        #region 重设大小
+        ResizeWindow(id, window);
+        #endregion
+
         //设置改窗口可以拖动
         GUI.DragWindow();
+    }
+
+    /// <summary>
+    /// 重置窗口大小.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="window"></param>
+    void ResizeWindow(int id, BaseNode window)
+    {
+        //if (GUIUtility.hotControl == 0) { window.Resizable = false; }
+        float _cornerX = window.WindowRect.width;
+        float _cornerY = window.WindowRect.height;
+
+        GUILayout.BeginArea(new Rect(1, _cornerY - 16, _cornerX - 3, 14));
+        GUILayout.BeginHorizontal(EditorStyles.toolbarTextField, GUILayout.ExpandWidth(true));
+        GUILayout.FlexibleSpace();
+
+        window.HandleArea = GUILayoutUtility.GetRect(_resizeIcon, GUIStyle.none);
+        GUI.DrawTexture(new Rect(window.HandleArea.xMin + 3, window.HandleArea.yMin - 3, 20, 20), _resizeIcon.image);
+
+        if (!window.Resizable && ((Event.current.type == EventType.MouseDown) || (Event.current.type == EventType.MouseDrag)))
+        {
+            if (window.HandleArea.Contains(Event.current.mousePosition, true))
+            {
+                window.Resizable = true;
+                //"FocusType.Passive" 此控件无法接收键盘焦点。
+                //GUIUtility.hotControl = GUIUtility.GetControlID(FocusType.Passive);
+            }
+        }
+
+        EditorGUIUtility.AddCursorRect(window.HandleArea, MouseCursor.ResizeUpLeft);
+        GUILayout.EndHorizontal();
+        GUILayout.EndArea();
+
+        if (window.Resizable && (Event.current.type == EventType.MouseDrag))
+        {
+            ResizeNode(id, Event.current.delta.x, Event.current.delta.y);
+            Repaint();
+            //当你已经使用一个事件时调用这个方法。事件的类型将设置为 EventType.Used，使其他GUI元素忽略它。
+            Event.current.Use();
+        }
+
+        MouseClickEvent.MouseUpEvent(Event.current, (e1) => {
+            window.Resizable = false;
+        });
+    }
+
+    private void DrawConnectionLine(Event e)
+    {
+        if (selectedOutPoint != null)
+        {
+            Debug.Log("selectedOutPoint: 为空");
+        }
+        if (makeTransitionMode)
+        {
+            Handles.DrawBezier(
+                selectedOutPoint.rect.center,
+                e.mousePosition,
+                selectedOutPoint.rect.center - Vector2.left * 50f,
+                e.mousePosition + Vector2.left * 50f,
+                Color.white,
+                null,
+                4
+            );
+        }
+        
+        if (selectedInPoint != null && selectedOutPoint == null)
+        {
+            Handles.DrawBezier(
+                selectedInPoint.rect.center,
+                e.mousePosition,
+                selectedInPoint.rect.center + Vector2.left * 50f,
+                e.mousePosition - Vector2.left * 50f,
+                Color.white,
+                null,
+                4
+            );
+        }
+        if (selectedOutPoint != null && selectedInPoint == null)
+        {
+            Handles.DrawBezier(
+                selectedOutPoint.rect.center,
+                e.mousePosition,
+                selectedOutPoint.rect.center - Vector2.left * 50f,
+                e.mousePosition + Vector2.left * 50f,
+                Color.white,
+                null,
+                4
+            );
+        }
     }
 
     void DrawNodeCurve(Rect start, Rect end, Color color)
@@ -159,6 +337,11 @@ public class NodeEditor : EditorWindow
         Vector3 startTan = startPos + Vector3.right * 50;
         Vector3 endTan = endPos + Vector3.left * 50;
         Handles.DrawBezier(startPos, endPos, startTan, endTan, color, null, 4);
+
+        if (Handles.Button((start.center + end.center) * 0.5f, Quaternion.identity, 4, 8, Handles.RectangleHandleCap))
+        {
+            Debug.LogWarning("删除连续");
+        }
     }
 
     /// <summary>
@@ -167,10 +350,10 @@ public class NodeEditor : EditorWindow
     /// <param name="e"></param>
     void UserInput(Event e)
     {
-        MouseClickEvent.MouseRightClick(e,(e1)=> {
-            ClickedOnWindow(e1);
-
-            if (!clickedOnwindow)
+        //鼠标右键事件
+        MouseClickEvent.MouseRightClick(e, (e1) =>
+        {
+            if (!ClickedOnWindow(e1))
             {
                 AddNewNode(e1);
             }
@@ -181,24 +364,59 @@ public class NodeEditor : EditorWindow
         });
 
         //拖拽全部节点(整个背景窗口).
-        MouseClickEvent.MouseCenterClick(e,(e1)=> {
-            MouseClickEvent.MouseDownEvent(e1, (e2) => {
+        MouseClickEvent.MouseCenterClick(e, (e1) =>
+        {
+            MouseClickEvent.MouseDownEvent(e1, (e2) =>
+            {
                 initMousePos = e.mousePosition;
             });
 
-            MouseClickEvent.MouseDragEvent(e1,(e2)=> {
+            MouseClickEvent.MouseDragEvent(e1, (e2) =>
+            {
                 Vector2 deltaMousePos = e2.mousePosition - initMousePos;
                 for (int i = 0; i < customGraph.windows.Count; i++)
                 {
                     BaseNode b = customGraph.windows[i];
-                    b.windowRect.x += deltaMousePos.x;
-                    b.windowRect.y += deltaMousePos.y;
+                    b.WindowRect.x += deltaMousePos.x;
+                    b.WindowRect.y += deltaMousePos.y;
                 }
 
                 initMousePos = e.mousePosition;
                 Repaint();
             });
         });
+
+        ProcessNodeEvents(e);
+    }
+
+    /// <summary>
+    /// 节点的鼠标输入事件
+    /// </summary>
+    /// <param name="e"></param>
+    private void ProcessNodeEvents(Event e)
+    {
+        for (int i = 0; i < customGraph.windows.Count; i++)
+        {
+            var window = customGraph.windows[i];
+            window.MouseEvent(e);
+        }
+    }
+
+    void ResizeNode(int id, float deltaX, float deltaY)
+    {
+        var windows = customGraph.windows;
+
+        float targetWidth = windows[id].WindowRect.width;
+        float targetHeight = windows[id].WindowRect.height;
+
+        if ((windows[id].WindowRect.width + deltaX) > 50)
+            targetWidth = windows[id].WindowRect.width + deltaX;
+
+        if ((windows[id].WindowRect.height + deltaY) > 50)
+            targetHeight = windows[id].WindowRect.height + deltaY;
+
+        windows[id].WindowRect = new Rect(windows[id].WindowRect.position.x, windows[id].WindowRect.position.y,
+                                          targetWidth, targetHeight);
     }
 
     /// <summary>
@@ -207,12 +425,12 @@ public class NodeEditor : EditorWindow
     /// <param name="e"></param>
     public bool ClickedOnWindow(Event e)
     {
-        clickedOnwindow = false;
+        bool clickedOnwindow = false;
         selectedNode = null;
 
         for (int i = 0; i < customGraph.windows.Count; i++)
         {
-            if (customGraph.windows[i].windowRect.Contains(e.mousePosition))
+            if (customGraph.windows[i].WindowRect.Contains(e.mousePosition))
             {
                 clickedOnwindow = true;
                 selectedNode = customGraph.windows[i];
@@ -227,22 +445,18 @@ public class NodeEditor : EditorWindow
     {
         GenericMenu menu = new GenericMenu();
         menu.AddSeparator("");
-        menu.AddItem(new GUIContent("Add State"), false, () =>
+        
+        menu.AddItem(new GUIContent("Add WindowNode"), false, () =>
         {
-            Debug.LogWarning("Add State");
-            BaseNode baseNode = customGraph.AddNodeOnGraph(null, 150, 100, "TestNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
-
-        });
-
-        menu.AddItem(new GUIContent("Add MenuItem"), false, () =>
-        {
-            Debug.LogWarning("Add State");
             var menuNode= ScriptableObject.CreateInstance<MenuNode>();
-            BaseNode baseNode = customGraph.AddNodeOnGraph(menuNode, 150, 100, "MenuItem", new Vector3(e.mousePosition.x, e.mousePosition.y));
-
+            BaseNode baseNode = customGraph.AddWindowNode(menuNode, 200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y));
         });
-
-        menu.AddItem(new GUIContent("Add Comment"), false, null);
+        menu.AddItem(new GUIContent("Add BoxNode"), false, () =>
+        {
+            var boxNode = ScriptableObject.CreateInstance<BoxNode>();
+            BaseNode baseNode = customGraph.AddBoxNode(boxNode, 200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y), inPointStyle, outPointStyle, OnClickInPoint, OnClickOutPoint, NodeType.Box);
+            baseNode.nodeStyle = nodeStyle;
+        });
         menu.ShowAsContext();
         //e.Use();
     }
@@ -264,12 +478,12 @@ public class NodeEditor : EditorWindow
 
             selectedNode = null;
         });
-        menu.AddItem(new GUIContent("Add State"), false, () => {
-            BaseNode baseNode = customGraph.AddNodeOnGraph(null, 150, 100, "TestNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
+        menu.AddItem(new GUIContent("Add Window"), false, () => {
+            BaseNode baseNode = customGraph.AddWindowNode(null, 200, 100, "TestNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
             selectedNode.childNodes.Add(baseNode.id);
             baseNode.ParentNode = selectedNode.id;
         });
-
+        
         menu.AddItem(new GUIContent("画线"), false, () => {
             makeTransitionMode = true;
         });
@@ -300,13 +514,13 @@ public class NodeEditor : EditorWindow
     /// </summary>
     public void DrawBackground()
     {
-        if (skin == null)
-        {
-            //此函数将在Assets/Editor Default Resources/+path中查找资源。如果没有，它将按名称尝试内置编辑器资源。
-            skin = EditorGUIUtility.Load("skin.guiskin") as GUISkin;
-        }
+        //if (skin == null)
+        //{
+        //    //此函数将在Assets/Editor Default Resources/+path中查找资源。如果没有，它将按名称尝试内置编辑器资源。
+        //    skin = EditorGUIUtility.Load("skin.guiskin") as GUISkin;
+        //}
             
-        GUI.skin = skin;
+        //GUI.skin = skin;
 
         float w = position.width;
         float h = position.width;
@@ -325,4 +539,98 @@ public class NodeEditor : EditorWindow
         for (int i = 0; i * 20 <= h; i++) if (i % 3 != 0) Handles.DrawLine(new Vector3(0, 20 * i), new Vector3(w, 20 * i));
         Handles.EndGUI();
     }
+
+    /// <summary>
+    /// 绘制工具栏
+    /// </summary>
+    protected void DrawToolbar()
+    {
+        GUILayout.BeginHorizontal(EditorStyles.toolbar);
+        GUILayout.FlexibleSpace();
+        //EditorGUILayout.LabelField("Position:" + offset.ToString(), EditorStyles.label);
+        if (GUILayout.Button("Save", EditorStyles.toolbarButton))
+        {
+            //OpenSaveDialog();
+        }
+        if (GUILayout.Button("Load", EditorStyles.toolbarButton))
+        {
+            //OpenLoadDialog();
+        }
+        if (GUILayout.Button("Reset", EditorStyles.toolbarButton))
+        {
+            //BackToCenter();
+        }
+        if (GUILayout.Button("Clear", EditorStyles.toolbarButton))
+        {
+            //Clear();
+        }
+        GUILayout.EndHorizontal();
+    }
+
+    #region 连接点、连接线
+    private void OnClickInPoint(ConnectionPoint inPoint)
+    {
+        Debug.LogWarning("OnClickInPoint 点击了");
+        selectedInPoint = inPoint;
+        
+        if (selectedOutPoint != null)
+        {
+            makeTransitionMode = false;
+
+            if (selectedOutPoint.node != selectedInPoint.node)
+            {
+                CreateConnection();
+                ClearConnectionSelection();
+            }
+            else
+            {
+                ClearConnectionSelection();
+            }
+        }
+        else
+        {
+            makeTransitionMode = true;
+        }
+    }
+
+    private void OnClickOutPoint(ConnectionPoint outPoint)
+    {
+        selectedOutPoint = outPoint;
+        makeTransitionMode = true;
+        
+        if (selectedInPoint != null)
+        {
+            if (selectedOutPoint.node != selectedInPoint.node)
+            {
+                CreateConnection();
+                ClearConnectionSelection();
+            }
+            else
+            {
+                ClearConnectionSelection();
+            }
+        }
+    }
+
+    private void CreateConnection()
+    {
+        Connection connection = new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection);
+        //if (connections == null)
+        //{
+        //    connections = new List<Connection>();
+        //}
+        //connections.Add(new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection));
+    }
+
+    private void ClearConnectionSelection()
+    {
+        selectedInPoint = null;
+        selectedOutPoint = null;
+    }
+
+    private void OnClickRemoveConnection(Connection connection)
+    {
+        //connections.Remove(connection);
+    }
+    #endregion
 }

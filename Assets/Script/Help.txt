@@ -1,0 +1,1 @@
+Event.current.Use();  //针对的是Window窗口编号.

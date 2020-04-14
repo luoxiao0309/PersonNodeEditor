@@ -3,27 +3,47 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+public enum MouseEnum
+{
+    /// <summary>
+    /// 左键点击
+    /// </summary>
+    LeftClick = 0,
+    /// <summary>
+    /// 鼠标中键
+    /// </summary>
+    CenterClick = 2,
+    /// <summary>
+    /// 鼠标右键
+    /// </summary>
+    RightClick = 1
+}
+
+
 /// <summary>
 /// 鼠标点击事件集合.
 /// </summary>
 public class MouseClickEvent
 {
-    private enum MouseEnum
+    public static bool IsMouseRight(Event e)
     {
-        /// <summary>
-        /// 左键点击
-        /// </summary>
-        LeftClick = 0,
-        /// <summary>
-        /// 鼠标中键
-        /// </summary>
-        CenterClick = 2,
-        /// <summary>
-        /// 鼠标右键
-        /// </summary>
-        RightClick = 1
+        if (e.button==(int)MouseEnum.RightClick)
+        {
+            return true;
+        }
+        return false;
+    } 
+
+    public static bool IsMouseLeft(Event e)
+    {
+        if (e.button == (int)MouseEnum.LeftClick)
+        {
+            return true;
+        }
+        return false;
     }
-    
+
     /// <summary>
     /// 鼠标中键点击
     /// </summary>
@@ -58,6 +78,19 @@ public class MouseClickEvent
     public static void MouseRightClick(Event e, Action<Event> action)
     {
         if (e.button == (int)MouseEnum.RightClick)
+        {
+            action(e);
+        }
+    }
+
+    /// <summary>
+    /// 鼠标释放事件
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="action"></param>
+    public static void MouseUpEvent(Event e, Action<Event> action)
+    {
+        if (e.type == EventType.MouseUp)
         {
             action(e);
         }
