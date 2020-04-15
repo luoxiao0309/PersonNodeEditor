@@ -132,4 +132,26 @@ public class BaseNode
         WindowRect.position += delta;
     }
 
+    public void AddConnection(Connection connection)
+    {
+        if (connections.Count==0)
+        {
+            connections.Add(connection);
+        }
+        else
+        {
+            foreach (var item in connections)
+            {
+                if ((item.inPoint.Equals(connection.inPoint)==false)||(item.outPoint.Equals(connection.outPoint)==false))
+                {
+                    connections.Add(connection);
+                }
+            }
+        }
+    }
+
+    public void RemoveConnection(Connection connection)
+    {
+        connections.Remove(connection);
+    }
 }

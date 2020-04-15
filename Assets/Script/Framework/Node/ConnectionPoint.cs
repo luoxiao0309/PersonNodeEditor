@@ -61,12 +61,7 @@ public class ConnectionPoint
         {
             if (OnClickConnectionPoint != null)
             {
-                Debug.LogWarning("OnClickConnectionPoint 不为空");
                 OnClickConnectionPoint(this);
-            }
-            else
-            {
-                Debug.Log("OnClickConnectionPoint 为空");
             }
         }
     }

@@ -153,14 +153,12 @@ public class NodeEditor : EditorWindow
             return;
         }
         
-        MouseClickEvent.MouseLeftClick(e, (e1) =>
+        //不能使用LeftClick来判断,有问题.
+        if (e.IsMouseDownClick())
         {
-            MouseClickEvent.MouseDownEvent(e, (e2) =>
-            {
-                makeTransitionMode = false;
-                ClickedOnWindow(e);
-            });
-        });
+            makeTransitionMode = false;
+            ClickedOnWindow(e);
+        }
 
         #region Window 窗口连线.
         if (selectedNode != null && makeTransitionMode)
@@ -169,8 +167,7 @@ public class NodeEditor : EditorWindow
             DrawNodeCurve(selectedNode.WindowRect, mouseRect, Color.blue);
         }
         #endregion
-        DrawConnectionLine(e);
-        
+
         //绘画窗口(绘制Windows窗口会卡 GUI.changed, 所以你只能不断刷.)
         this.DrawChildWindow(()=> {
             for (int i = 0; i < customGraph.windows.Count; i++)
@@ -200,7 +197,12 @@ public class NodeEditor : EditorWindow
             //绘制box矩形连线.
             if (b.connections.Count>0)
             {
-
+                //foreach 一直刷会有问题.
+                for (int m = 0; m < b.connections.Count; m++)
+                {
+                    var item = b.connections[m];
+                    item.Draw();
+                }
             }
             else
             {
@@ -215,6 +217,8 @@ public class NodeEditor : EditorWindow
                 }
             }
         }
+        
+        DrawConnectionLine(e);
 
         //在画线时,不响应其他的事件
         if (makeTransitionMode == false)
@@ -287,46 +291,43 @@ public class NodeEditor : EditorWindow
 
     private void DrawConnectionLine(Event e)
     {
-        if (selectedOutPoint != null)
-        {
-            Debug.Log("selectedOutPoint: 为空");
-        }
-        if (makeTransitionMode)
-        {
-            Handles.DrawBezier(
-                selectedOutPoint.rect.center,
-                e.mousePosition,
-                selectedOutPoint.rect.center - Vector2.left * 50f,
-                e.mousePosition + Vector2.left * 50f,
-                Color.white,
-                null,
-                4
-            );
-        }
-        
         if (selectedInPoint != null && selectedOutPoint == null)
         {
-            Handles.DrawBezier(
-                selectedInPoint.rect.center,
-                e.mousePosition,
-                selectedInPoint.rect.center + Vector2.left * 50f,
-                e.mousePosition - Vector2.left * 50f,
-                Color.white,
-                null,
-                4
-            );
+            if (e.IsMouseDownClick())
+            {
+                selectedInPoint = null;
+            }
+            else
+            {
+                Handles.DrawBezier(
+                    selectedInPoint.rect.center,
+                    e.mousePosition,
+                    selectedInPoint.rect.center + Vector2.left * 50f,
+                    e.mousePosition - Vector2.left * 50f,
+                    Color.white,
+                    null,
+                    4
+                );
+            }
         }
         if (selectedOutPoint != null && selectedInPoint == null)
         {
-            Handles.DrawBezier(
-                selectedOutPoint.rect.center,
-                e.mousePosition,
-                selectedOutPoint.rect.center - Vector2.left * 50f,
-                e.mousePosition + Vector2.left * 50f,
-                Color.white,
-                null,
-                4
-            );
+            if (e.IsMouseDownClick())
+            {
+                selectedOutPoint = null;
+            }
+            else
+            {
+                Handles.DrawBezier(
+                    selectedOutPoint.rect.center,
+                    e.mousePosition,
+                    selectedOutPoint.rect.center - Vector2.left * 50f,
+                    e.mousePosition + Vector2.left * 50f,
+                    Color.white,
+                    null,
+                    4
+                );
+            }
         }
     }
 
@@ -570,13 +571,11 @@ public class NodeEditor : EditorWindow
     #region 连接点、连接线
     private void OnClickInPoint(ConnectionPoint inPoint)
     {
-        Debug.LogWarning("OnClickInPoint 点击了");
         selectedInPoint = inPoint;
-        
+        Debug.LogWarning("OnClickInPoint");
+
         if (selectedOutPoint != null)
         {
-            makeTransitionMode = false;
-
             if (selectedOutPoint.node != selectedInPoint.node)
             {
                 CreateConnection();
@@ -587,17 +586,13 @@ public class NodeEditor : EditorWindow
                 ClearConnectionSelection();
             }
         }
-        else
-        {
-            makeTransitionMode = true;
-        }
+        Event.current.Use();
     }
 
     private void OnClickOutPoint(ConnectionPoint outPoint)
     {
         selectedOutPoint = outPoint;
-        makeTransitionMode = true;
-        
+        Debug.LogWarning("OnClickOutPoint");
         if (selectedInPoint != null)
         {
             if (selectedOutPoint.node != selectedInPoint.node)
@@ -610,16 +605,13 @@ public class NodeEditor : EditorWindow
                 ClearConnectionSelection();
             }
         }
+        Event.current.Use();
     }
 
     private void CreateConnection()
     {
         Connection connection = new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection);
-        //if (connections == null)
-        //{
-        //    connections = new List<Connection>();
-        //}
-        //connections.Add(new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection));
+        selectedInPoint.node.AddConnection(connection);
     }
 
     private void ClearConnectionSelection()
@@ -630,7 +622,8 @@ public class NodeEditor : EditorWindow
 
     private void OnClickRemoveConnection(Connection connection)
     {
-        //connections.Remove(connection);
+        connection.inPoint.node.RemoveConnection(connection);
+        Event.current.Use();
     }
     #endregion
 }
