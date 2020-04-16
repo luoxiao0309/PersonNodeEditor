@@ -253,6 +253,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Script\CustomNode\2\CalcNode.cs" />
+    <Compile Include="Assets\Script\CustomNode\2\InputNode.cs" />
     <Compile Include="Assets\Script\CustomNode\BoxNode.cs" />
     <Compile Include="Assets\Script\CustomNode\MenuNode.cs" />
     <Compile Include="Assets\Script\Framework\CustomGraph.cs" />
@@ -260,11 +262,11 @@
     <Compile Include="Assets\Script\Framework\Node\ChildNode\BoxBaseNode.cs" />
     <Compile Include="Assets\Script\Framework\Node\Connection.cs" />
     <Compile Include="Assets\Script\Framework\Node\ConnectionPoint.cs" />
-    <Compile Include="Assets\Script\Framework\Node\DrawNode.cs" />
     <Compile Include="Assets\Script\Framework\Tool\EditorHelper.cs" />
     <Compile Include="Assets\Script\Framework\Tool\EventExtension.cs" />
     <Compile Include="Assets\Script\Framework\Tool\MenuItem.cs" />
     <Compile Include="Assets\Script\Framework\Tool\MouseClickEvent.cs" />
+    <Compile Include="Assets\Script\Framework\Tool\NodeTool.cs" />
     <Compile Include="Assets\Script\Framework\Tool\StyleHelper.cs" />
     <Compile Include="Assets\Script\NodeEditor.cs" />
   </ItemGroup>

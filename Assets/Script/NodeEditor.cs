@@ -165,6 +165,7 @@ public class NodeEditor : EditorWindow
         {
             Rect mouseRect = new Rect(e.mousePosition.x, e.mousePosition.y, 10, 10);
             DrawNodeCurve(selectedNode.WindowRect, mouseRect, Color.blue);
+            Repaint();
         }
         #endregion
 
@@ -173,16 +174,14 @@ public class NodeEditor : EditorWindow
             for (int i = 0; i < customGraph.windows.Count; i++)
             {
                 BaseNode b = customGraph.windows[i];
-                if (b.NodeType==NodeType.Window)
+                if (b.NodeType==NodeType.Window || b.NodeType == NodeType.InputNode|| b.NodeType == NodeType.CalcNode)
                 {
                     b.WindowRect = GUI.Window(i, b.WindowRect,
                            DrawNodeWindow, b.windowTitle + ": " + b.id);
                 }
-                else
+                else if(b.NodeType == NodeType.Box)
                 {
-                    BoxBaseNode boxBaseNode = new BoxBaseNode(inPointStyle, outPointStyle, OnClickInPoint, OnClickOutPoint);
-                    boxBaseNode = b as BoxBaseNode;
-
+                    BoxNode boxBaseNode = customGraph.windows[i] as BoxNode;
                     boxBaseNode.nodeStyle = nodeStyle;
                     boxBaseNode.DrawWindow();
                 }
@@ -226,8 +225,7 @@ public class NodeEditor : EditorWindow
             UserInput(e);
         }
 
-        //反复刷新.
-        Repaint();
+        //Repaint();
     }
 
     //绘画窗口函数
@@ -308,6 +306,7 @@ public class NodeEditor : EditorWindow
                     null,
                     4
                 );
+                Repaint();
             }
         }
         if (selectedOutPoint != null && selectedInPoint == null)
@@ -327,6 +326,7 @@ public class NodeEditor : EditorWindow
                     null,
                     4
                 );
+                Repaint();
             }
         }
     }
@@ -449,13 +449,24 @@ public class NodeEditor : EditorWindow
         
         menu.AddItem(new GUIContent("Add WindowNode"), false, () =>
         {
-            var menuNode= ScriptableObject.CreateInstance<MenuNode>();
-            BaseNode baseNode = customGraph.AddWindowNode(menuNode, 200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y));
+            customGraph.AddWindowNode(200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y));
+        });
+        menu.AddItem(new GUIContent("Add MenuNode"), false, () =>
+        {
+            customGraph.AddMenuWindowNode(200, 100, "MenuNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
+        });
+        menu.AddItem(new GUIContent("Add InputNode"), false, () =>
+        {
+            customGraph.AddInputNode(200, 100, "InputNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
+        });
+        menu.AddItem(new GUIContent("Add CalcNode"), false, () =>
+        {
+            customGraph.AddCalcNodeNode(200, 100, "CalcNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
         });
         menu.AddItem(new GUIContent("Add BoxNode"), false, () =>
         {
             var boxNode = ScriptableObject.CreateInstance<BoxNode>();
-            BaseNode baseNode = customGraph.AddBoxNode(boxNode, 200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y), inPointStyle, outPointStyle, OnClickInPoint, OnClickOutPoint, NodeType.Box);
+            BaseNode baseNode = customGraph.AddBoxNode(200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y), inPointStyle, outPointStyle, OnClickInPoint, OnClickOutPoint, NodeType.Box);
             baseNode.nodeStyle = nodeStyle;
         });
         menu.ShowAsContext();
@@ -480,7 +491,7 @@ public class NodeEditor : EditorWindow
             selectedNode = null;
         });
         menu.AddItem(new GUIContent("Add Window"), false, () => {
-            BaseNode baseNode = customGraph.AddWindowNode(null, 200, 100, "TestNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
+            BaseNode baseNode = customGraph.AddWindowNode(200, 100, "TestNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
             selectedNode.childNodes.Add(baseNode.id);
             baseNode.ParentNode = selectedNode.id;
         });
@@ -586,6 +597,8 @@ public class NodeEditor : EditorWindow
                 ClearConnectionSelection();
             }
         }
+
+        //使用当前事件,阻止其他事件响应.
         Event.current.Use();
     }
 

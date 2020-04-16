@@ -18,11 +18,16 @@ public class BoxBaseNode : BaseNode
     public GUIStyle outPointStyle;
     
 
-    public BoxBaseNode(GUIStyle inPointStyle, GUIStyle outPointStyle,Action<ConnectionPoint> OnClickInPoint, Action<ConnectionPoint> OnClickOutPoint) :base()
+    public BoxBaseNode() :base()
+    {
+        
+    }
+
+    public void InitData(GUIStyle inPointStyle, GUIStyle outPointStyle, Action<ConnectionPoint> OnClickInPoint, Action<ConnectionPoint> OnClickOutPoint)
     {
         this.inPointStyle = inPointStyle;
         this.outPointStyle = outPointStyle;
-        
+
         ConnectionPoint inPoint = new ConnectionPoint(this, ConnectionPointType.In, inPointStyle, OnClickInPoint);
         ConnectionPoint outPoint = new ConnectionPoint(this, ConnectionPointType.Out, outPointStyle, OnClickOutPoint);
 
@@ -41,11 +46,13 @@ public class BoxBaseNode : BaseNode
 
     public new void DrawWindow()
     {
-        if (drawNode != null)
-        {
-            drawNode.DrawWindow(this);
-        }
-
+        GUI.Box(WindowRect, "", nodeStyle);
+        var rect2 = WindowRect;
+        rect2.y += 10;
+        rect2.x += 10;
+        rect2.width -= 20;
+        rect2.height -= 23;
+        
         DrawConnectPoint();
     }
 

@@ -16,10 +16,9 @@ public class CustomGraph : ScriptableObject
     [SerializeField]
     public int IdCount = 1;
     
-    public BaseNode AddWindowNode(DrawNode type, float width, float height, string title, Vector3 pos, NodeType nodeType=NodeType.Window)
+    public BaseNode AddWindowNode(float width, float height, string title, Vector3 pos, NodeType nodeType=NodeType.Window)
     {
-        BaseNode baseNode = new BaseNode();
-        baseNode.drawNode = type;
+        BaseNode baseNode = ScriptableObject.CreateInstance<BaseNode>();
         baseNode.WindowRect.width = width;
         baseNode.WindowRect.height = height;
         baseNode.windowTitle = title;
@@ -34,11 +33,60 @@ public class CustomGraph : ScriptableObject
         return baseNode;
     }
 
-    public BaseNode AddBoxNode(DrawNode type, float width, float height, string title, Vector3 pos,
+    public BaseNode AddMenuWindowNode(float width, float height, string title, Vector3 pos, NodeType nodeType = NodeType.Window)
+    {
+        BaseNode baseNode = ScriptableObject.CreateInstance<MenuNode>();
+        baseNode.WindowRect.width = width;
+        baseNode.WindowRect.height = height;
+        baseNode.windowTitle = title;
+        baseNode.WindowRect.x = pos.x;
+        baseNode.WindowRect.y = pos.y;
+        baseNode.id = idCount;
+        baseNode.NodeType = nodeType;
+        //baseNode.InitInOut();
+        windows.Add(baseNode);
+        IdCount = idCount;
+        idCount++;
+        return baseNode;
+    }
+
+    public BaseNode AddInputNode(float width, float height, string title, Vector3 pos, NodeType nodeType = NodeType.InputNode)
+    {
+        InputNode baseNode = ScriptableObject.CreateInstance<InputNode>();
+        baseNode.WindowRect.width = width;
+        baseNode.WindowRect.height = height;
+        baseNode.windowTitle = title;
+        baseNode.WindowRect.x = pos.x;
+        baseNode.WindowRect.y = pos.y;
+        baseNode.id = idCount;
+        baseNode.NodeType = nodeType;
+        windows.Add(baseNode);
+        IdCount = idCount;
+        idCount++;
+        return baseNode;
+    }
+
+    public BaseNode AddCalcNodeNode(float width, float height, string title, Vector3 pos, NodeType nodeType = NodeType.CalcNode)
+    {
+        CalcNode baseNode = ScriptableObject.CreateInstance<CalcNode>();
+        baseNode.WindowRect.width = width;
+        baseNode.WindowRect.height = height;
+        baseNode.windowTitle = title;
+        baseNode.WindowRect.x = pos.x;
+        baseNode.WindowRect.y = pos.y;
+        baseNode.id = idCount;
+        baseNode.NodeType = nodeType;
+        windows.Add(baseNode);
+        IdCount = idCount;
+        idCount++;
+        return baseNode;
+    }
+
+    public BaseNode AddBoxNode(float width, float height, string title, Vector3 pos,
                                    GUIStyle inPointStyle, GUIStyle outPointStyle, Action<ConnectionPoint> OnClickInPoint, Action<ConnectionPoint> OnClickOutPoint, NodeType nodeType = NodeType.Box)
     {
-        BoxBaseNode baseNode = new BoxBaseNode(inPointStyle, outPointStyle,OnClickInPoint,OnClickOutPoint);
-        baseNode.drawNode = type;
+        BoxNode baseNode = ScriptableObject.CreateInstance<BoxNode>();
+        baseNode.InitData(inPointStyle, outPointStyle,OnClickInPoint,OnClickOutPoint);
         baseNode.WindowRect.width = width;
         baseNode.WindowRect.height = height;
         baseNode.windowTitle = title;

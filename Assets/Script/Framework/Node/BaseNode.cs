@@ -7,19 +7,19 @@ using UnityEngine;
 public enum NodeType
 {
     Window,
-    Box
+    InputNode,
+    CalcNode,
+    Box,
 }
 
 /// <summary>
 /// GUIStyle节点样式(无法序列化保存,只能后期赋值)
 /// </summary>
 [System.Serializable]
-public class BaseNode
+public class BaseNode:ScriptableObject
 {
     #region 属性
     public int id;
-    [SerializeField]
-    public DrawNode drawNode;
     [SerializeField]
     public Rect WindowRect;
     public string windowTitle;
@@ -58,22 +58,15 @@ public class BaseNode
     {
 
     }
-    
-    public void DrawWindow()
+
+    public virtual void DrawWindow()
     {
-        if (drawNode != null)
-        {
-            drawNode.DrawWindow(this);
-        }
-        
+
     }
 
-    public void DrawCurve()
+    public virtual void DrawCurve()
     {
-        if (drawNode != null)
-        {
-            drawNode.DrawCurve(this);
-        }
+
     }
 
     /// <summary>
