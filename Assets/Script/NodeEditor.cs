@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -50,10 +51,16 @@ public class NodeEditor : EditorWindow
     private ConnectionPoint selectedOutPoint;
     #endregion
 
+    Rect sideWindowRect;
+    Rect scrollViewRect;
+    static NodeEditor editorWindow;
+    static Vector2 canvasSize = new Vector2(4000,4000);
+    public Vector2 scrollPos = new Vector2(4000 * 0.5f, 4000 * 0.5f);
+    
     [MenuItem("自定义/节点")]
     static void ShowEditor()
     {
-        NodeEditor editor = EditorWindow.GetWindow<NodeEditor>();
+        editorWindow = EditorWindow.GetWindow<NodeEditor>();
     }
 
     private void OnEnable()
@@ -144,15 +151,17 @@ public class NodeEditor : EditorWindow
         DrawBackground();
         DrawToolbar();
 
-        EditorGUILayout.LabelField("", GUILayout.Width(100));
-        EditorGUILayout.LabelField("Assign Graph", GUILayout.Width(100));
-        customGraph = EditorGUILayout.ObjectField(customGraph, typeof(CustomGraph), false, GUILayout.Width(200)) as CustomGraph;
-        
-        if (customGraph==null)
+        DrawGroup();
+        //EditorGUILayout.LabelField("", GUILayout.Width(100));
+        //EditorGUILayout.LabelField("Assign Graph", GUILayout.Width(100));
+        //customGraph = EditorGUILayout.ObjectField(customGraph, typeof(CustomGraph), false, GUILayout.Width(200)) as CustomGraph;
+
+        if (customGraph == null)
         {
             return;
         }
-        
+
+
         //不能使用LeftClick来判断,有问题.
         if (e.IsMouseDownClick())
         {
@@ -168,7 +177,7 @@ public class NodeEditor : EditorWindow
             Repaint();
         }
         #endregion
-
+        
         //绘画窗口(绘制Windows窗口会卡 GUI.changed, 所以你只能不断刷.)
         this.DrawChildWindow(()=> {
             for (int i = 0; i < customGraph.windows.Count; i++)
@@ -176,8 +185,12 @@ public class NodeEditor : EditorWindow
                 BaseNode b = customGraph.windows[i];
                 if (b.NodeType==NodeType.Window || b.NodeType == NodeType.InputNode|| b.NodeType == NodeType.CalcNode)
                 {
-                    b.WindowRect = GUI.Window(i, b.WindowRect,
-                           DrawNodeWindow, b.windowTitle + ": " + b.id);
+                    //b.WindowRect = GUI.Window(i, b.WindowRect,
+                    //       DrawNodeWindow, b.windowTitle + ": " + b.id);
+
+                    //b.WindowRect = GUILayout.Window(i, b.WindowRect, DrawNodeWindow, "GUILayout.Window");
+
+                    b.WindowRect = GUI.Window(i, b.WindowRect, DrawNodeWindow, "GUI.Window");
                 }
                 else if(b.NodeType == NodeType.Box)
                 {
@@ -224,8 +237,6 @@ public class NodeEditor : EditorWindow
         {
             UserInput(e);
         }
-
-        //Repaint();
     }
 
     //绘画窗口函数
@@ -337,12 +348,22 @@ public class NodeEditor : EditorWindow
         Vector3 endPos = new Vector3(end.x, end.y + end.height / 2, 0);
         Vector3 startTan = startPos + Vector3.right * 50;
         Vector3 endTan = endPos + Vector3.left * 50;
-        Handles.DrawBezier(startPos, endPos, startTan, endTan, color, null, 4);
 
+        if (DistancePointLine(Event.current.mousePosition, startTan, endTan) < 10)
+        {
+            Handles.DrawBezier(startPos, endPos, startTan, endTan, Color.blue, null, 4);
+        }
+        else
+        {
+            Handles.DrawBezier(startPos, endPos, startTan, endTan, Color.yellow, null, 4);
+        }
+        
         if (Handles.Button((start.center + end.center) * 0.5f, Quaternion.identity, 4, 8, Handles.RectangleHandleCap))
         {
             Debug.LogWarning("删除连续");
         }
+
+        Repaint();
     }
 
     /// <summary>
@@ -560,13 +581,33 @@ public class NodeEditor : EditorWindow
         GUILayout.BeginHorizontal(EditorStyles.toolbar);
         GUILayout.FlexibleSpace();
         //EditorGUILayout.LabelField("Position:" + offset.ToString(), EditorStyles.label);
+        if (GUILayout.Button("创建", EditorStyles.toolbarButton))
+        {
+            customGraph = ScriptableObject.CreateInstance<CustomGraph>();
+        }
         if (GUILayout.Button("Save", EditorStyles.toolbarButton))
         {
-            //OpenSaveDialog();
+            var savePath = EditorUtility.SaveFilePanel(
+                "保存剧情数据",
+                "Assets",
+                "WordEditorData",
+                "asset"
+            );
+            savePath = savePath.Substring(Application.dataPath.Length - 6);
+            AssetDatabase.CreateAsset(customGraph, savePath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
         if (GUILayout.Button("Load", EditorStyles.toolbarButton))
         {
-            //OpenLoadDialog();
+            var path = EditorUtility.OpenFilePanelWithFilters(
+                "保存剧情数据",
+                "Assets",
+                new string[] { "剧情数据", "asset" }
+            );
+            path = path.Substring(Application.dataPath.Length - 6);
+
+            customGraph = AssetDatabase.LoadAssetAtPath<CustomGraph>(path);
         }
         if (GUILayout.Button("Reset", EditorStyles.toolbarButton))
         {
@@ -637,6 +678,135 @@ public class NodeEditor : EditorWindow
     {
         connection.inPoint.node.RemoveConnection(connection);
         Event.current.Use();
+    }
+    #endregion
+
+    #region 鼠标触碰到线
+    /// <summary>
+    /// 鼠标点到连线的距离
+    /// </summary>
+    /// <param name="point"></param>
+    /// <param name="lineStart"></param>
+    /// <param name="lineEnd"></param>
+    /// <returns></returns>
+    public static float DistancePointLine(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
+    {
+        return Vector3.Magnitude(ProjectPointLine(point, lineStart, lineEnd) - point);
+    }
+
+    public static Vector3 ProjectPointLine(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
+    {
+        Vector3 rhs = point - lineStart;
+        Vector3 vector2 = lineEnd - lineStart;
+        float magnitude = vector2.magnitude;
+        Vector3 lhs = vector2;
+        if (magnitude > 1E-06f)
+        {
+            lhs = (Vector3)(lhs / magnitude);
+        }
+        float num2 = Mathf.Clamp(Vector3.Dot(lhs, rhs), 0f, magnitude);
+        return (lineStart + ((Vector3)(lhs * num2)));
+    }
+    #endregion
+
+    #region 绘制组
+    [NonSerialized]
+    private GUIStyle backgroundStyle;
+    [NonSerialized]
+    private GUIStyle altBackgroundStyle;
+    [NonSerialized]
+    private GUIStyle opBackgroundStyle;
+    [NonSerialized]
+    private GUIStyle headerTitleStyle;
+    [NonSerialized]
+    private GUIStyle headerTitleEditStyle;
+    private bool edit=false;
+    private Color color = new Color(0, 0, 1, 1);
+
+    /// <summary>
+    /// Draws the NodeGroup
+    /// </summary>
+    public void DrawGroup()
+    {
+        if (backgroundStyle == null)
+            GenerateStyles();
+        
+        Rect handleRect = new Rect(400,126,400,15);
+        GUI.Box(handleRect, GUIContent.none, opBackgroundStyle);
+
+        // Body
+        //groupBodyRect:(x:400.80, y:126.40, width:400.00, height:400.00)
+        Rect groupBodyRect = new Rect(400,126,400,400);
+        GUI.Box(groupBodyRect, GUIContent.none, backgroundStyle);
+        
+        // Header
+        //groupHeaderRect:(x:400.80, y:96.40, width:400.00, height:30.00)
+        Rect groupHeaderRect = new Rect(400,96,400,30);
+        GUILayout.BeginArea(groupHeaderRect, true ? GUIStyle.none : altBackgroundStyle);
+        GUILayout.BeginHorizontal();
+
+        GUILayout.Space(8);
+        Debug.LogWarning("edit:" + edit);
+        // Header Title
+        if (edit)
+            title = GUILayout.TextField(title, headerTitleEditStyle, GUILayout.MinWidth(40));
+        else
+            GUILayout.Label(title, headerTitleStyle, GUILayout.MinWidth(40));
+
+        GUILayout.Space(10);
+        GUILayout.FlexibleSpace();
+
+        if (edit)
+        {
+            GUILayout.Space(10);
+            color = UnityEditor.EditorGUILayout.ColorField(color);
+        }
+
+        // Edit Button
+        if (GUILayout.Button("E", new GUILayoutOption[] { GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false) }))
+            edit = !edit;
+
+        GUILayout.EndHorizontal();
+        GUILayout.EndArea();
+    }
+
+    /// <summary>
+    /// Generates all the styles for this node group based of the color
+    /// </summary>
+    private void GenerateStyles()
+    {
+        // Transparent background
+        Texture2D background = RTEditorGUI.ColorToTex(8, color * new Color(1, 1, 1, 0.4f));
+        // lighter, less transparent background
+        Texture2D altBackground = RTEditorGUI.ColorToTex(8, color * new Color(1, 1, 1, 0.6f));
+        // nearly opaque background
+        Texture2D opBackground = RTEditorGUI.ColorToTex(8, color * new Color(1, 1, 1, 0.9f));
+
+        backgroundStyle = new GUIStyle();
+        backgroundStyle.normal.background = background;
+        backgroundStyle.padding = new RectOffset(10, 10, 5, 5);
+
+        altBackgroundStyle = new GUIStyle();
+        altBackgroundStyle.normal.background = altBackground;
+        altBackgroundStyle.padding = new RectOffset(10, 10, 5, 5);
+
+        opBackgroundStyle = new GUIStyle();
+        opBackgroundStyle.normal.background = opBackground;
+        opBackgroundStyle.padding = new RectOffset(10, 10, 5, 5);
+
+        //			dragHandleStyle = new GUIStyle ();
+        //			dragHandleStyle.normal.background = background;
+        //			//dragHandleStyle.hover.background = altBackground;
+        //			dragHandleStyle.padding = new RectOffset (10, 10, 5, 5);
+
+        headerTitleStyle = new GUIStyle();
+        headerTitleStyle.fontSize = 20;
+        headerTitleStyle.normal.textColor = Color.white;
+
+        headerTitleEditStyle = new GUIStyle(headerTitleStyle);
+        headerTitleEditStyle.normal.background = background;
+        headerTitleEditStyle.focused.background = background;
+        headerTitleEditStyle.focused.textColor = Color.white;
     }
     #endregion
 }

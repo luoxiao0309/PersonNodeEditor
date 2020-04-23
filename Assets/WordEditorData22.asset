@@ -8,11 +8,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b1e81f1b6234eb4f9cce83a278cef01, type: 3}
-  m_Name: New Custom Graph
+  m_Script: {fileID: 11500000, guid: f30615d2ee1f6e74da3599659ad1c201, type: 3}
+  m_Name: WordEditorData22
   m_EditorClassIdentifier: 
-  windows:
-  - {fileID: 11400000, guid: 242e7987f15d4f240a94f75b9dfbaf91, type: 2}
+  nodes:
   - {fileID: 0}
   - {fileID: 0}
-  IdCount: 1
+  - {fileID: 0}

@@ -16,7 +16,8 @@ public enum NodeType
 /// GUIStyle节点样式(无法序列化保存,只能后期赋值)
 /// </summary>
 [System.Serializable]
-public class BaseNode:ScriptableObject
+[CreateAssetMenu]
+public abstract class BaseNode:ScriptableObject
 {
     #region 属性
     public int id;
@@ -61,7 +62,14 @@ public class BaseNode:ScriptableObject
 
     public virtual void DrawWindow()
     {
+        Color temp = GUI.backgroundColor;
+        GUI.backgroundColor = Color.red;
 
+        if (GUI.Button(new Rect(WindowRect.width - 18, -1, 18, 18), "X"))
+        {
+            Debug.LogWarning("拖拽...");
+        }
+        GUI.backgroundColor = temp;
     }
 
     public virtual void DrawCurve()

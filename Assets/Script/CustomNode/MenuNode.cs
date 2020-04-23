@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
+[CreateAssetMenu]
+[System.Serializable]
 public class MenuNode : BaseNode
 {
     private GameObject controlledObject;
@@ -22,7 +24,7 @@ public class MenuNode : BaseNode
         //        controlledObject = new GameObject();
 
         //controlledObject = (GameObject)EditorGUILayout.ObjectField(controlledObject, typeof(GameObject), true);
-
+        base.DrawWindow();
         GUI.Button(new Rect(0,32,20,20),"ss");
     }
 }

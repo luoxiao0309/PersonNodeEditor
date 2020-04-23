@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c9e4ab88d443eb42bae30c30052b357, type: 3}
+  m_Name: GUIx
+  m_EditorClassIdentifier: 
+  skin: {fileID: 11400000, guid: 1c6bc1c47f0ca834b9c041674f1827fb, type: 2}
+  nodeColor: {r: 0.30147058, g: 0.30147058, b: 0.30147058, a: 1}
+  nodeSelectedColor: {r: 0.50735295, g: 0.50735295, b: 0.50735295, a: 1}
+  nodeHighlightColor: {r: 0.38235295, g: 0.38235295, b: 0.38235295, a: 1}

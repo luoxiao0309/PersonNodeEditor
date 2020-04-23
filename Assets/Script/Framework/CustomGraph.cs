@@ -6,8 +6,9 @@ using System;
 [CreateAssetMenu]
 public class CustomGraph : ScriptableObject
 {
-    [SerializeField]
+    //[SerializeField]
     public List<BaseNode> windows = new List<BaseNode>();
+
     //[SerializeField]
     private int idCount = 1;
     /// <summary>
@@ -18,7 +19,7 @@ public class CustomGraph : ScriptableObject
     
     public BaseNode AddWindowNode(float width, float height, string title, Vector3 pos, NodeType nodeType=NodeType.Window)
     {
-        BaseNode baseNode = ScriptableObject.CreateInstance<BaseNode>();
+        WindowNode baseNode = ScriptableObject.CreateInstance<WindowNode>();
         baseNode.WindowRect.width = width;
         baseNode.WindowRect.height = height;
         baseNode.windowTitle = title;
