@@ -56,7 +56,10 @@ public class NodeEditor : EditorWindow
     static NodeEditor editorWindow;
     static Vector2 canvasSize = new Vector2(4000,4000);
     public Vector2 scrollPos = new Vector2(4000 * 0.5f, 4000 * 0.5f);
-    
+
+    private MouseData mouse = new MouseData();
+    public MouseData mouseData { get { return mouse; } }
+
     [MenuItem("自定义/节点")]
     static void ShowEditor()
     {
@@ -156,6 +159,16 @@ public class NodeEditor : EditorWindow
         //EditorGUILayout.LabelField("Assign Graph", GUILayout.Width(100));
         //customGraph = EditorGUILayout.ObjectField(customGraph, typeof(CustomGraph), false, GUILayout.Width(200)) as CustomGraph;
 
+        ClearMouse();
+        UpdateMouse();
+
+        Debug.LogWarning("m_SelectedArea:"+ m_SelectedArea);
+        GUIHelper.Fill(m_SelectedArea, new Color(0.5f, 0.5f, 0.5f, 0.5f));
+        Rect pos = m_SelectedArea;
+        GUIHelper.DrawRect(pos, Color.white, 2);
+
+        SelectArea();
+
         if (customGraph == null)
         {
             return;
@@ -188,9 +201,10 @@ public class NodeEditor : EditorWindow
                     //b.WindowRect = GUI.Window(i, b.WindowRect,
                     //       DrawNodeWindow, b.windowTitle + ": " + b.id);
 
-                    //b.WindowRect = GUILayout.Window(i, b.WindowRect, DrawNodeWindow, "GUILayout.Window");
-
-                    b.WindowRect = GUI.Window(i, b.WindowRect, DrawNodeWindow, "GUI.Window");
+                    string nodeStyle = "flow node 0";
+                    if (b.Active) nodeStyle += " on";
+                    GUIStyle style = new GUIStyle(nodeStyle);
+                    b.WindowRect = GUI.Window(i, b.WindowRect, DrawNodeWindow, "", style);
                 }
                 else if(b.NodeType == NodeType.Box)
                 {
@@ -243,6 +257,20 @@ public class NodeEditor : EditorWindow
     void DrawNodeWindow(int id)
     {
         var window = customGraph.windows[id];
+
+        // 标题栏
+        const int titleHeight = 18;
+        Rect title = window.WindowRect;
+        title.height = titleHeight;
+        title.position = new Vector2(-1, 0);
+        GUIStyle style = new GUIStyle("dropDownButton");
+        style.fontSize = (int)((titleHeight - 3));
+        style.fixedHeight = titleHeight; // バー高さ
+        var temp = GUI.backgroundColor;
+        GUI.color = new Color(0.4f, 0.6f, 1.0f, 1.0f);
+        GUI.Label(title, window.windowTitle, style);
+        GUI.color = temp;
+
         window.DrawWindow();
         
         #region 重设大小
@@ -452,14 +480,18 @@ public class NodeEditor : EditorWindow
 
         for (int i = 0; i < customGraph.windows.Count; i++)
         {
-            if (customGraph.windows[i].WindowRect.Contains(e.mousePosition))
+            var window = customGraph.windows[i];
+            if (window.WindowRect.Contains(e.mousePosition))
             {
                 clickedOnwindow = true;
-                selectedNode = customGraph.windows[i];
-                break;
+                window.Active = true;
+                selectedNode = window;
+            }
+            else
+            {
+                window.Active = false;
             }
         }
-
         return clickedOnwindow;
     }
 
@@ -746,12 +778,12 @@ public class NodeEditor : EditorWindow
         GUILayout.BeginHorizontal();
 
         GUILayout.Space(8);
-        Debug.LogWarning("edit:" + edit);
+        string title1 = "";
         // Header Title
         if (edit)
-            title = GUILayout.TextField(title, headerTitleEditStyle, GUILayout.MinWidth(40));
+            title1 = GUILayout.TextField(title1, headerTitleEditStyle, GUILayout.MinWidth(40));
         else
-            GUILayout.Label(title, headerTitleStyle, GUILayout.MinWidth(40));
+            GUILayout.Label(title1, headerTitleStyle, GUILayout.MinWidth(40));
 
         GUILayout.Space(10);
         GUILayout.FlexibleSpace();
@@ -807,6 +839,222 @@ public class NodeEditor : EditorWindow
         headerTitleEditStyle.normal.background = background;
         headerTitleEditStyle.focused.background = background;
         headerTitleEditStyle.focused.textColor = Color.white;
+    }
+    #endregion
+
+    #region 选择区域
+    Rect m_SelectedArea;
+    public List<BaseNode> nodeList = new List<BaseNode>();
+    public List<BaseNode> selectedNodeList = new List<BaseNode>();
+
+    /// <summary>
+    /// 范围选择
+    /// </summary>
+    void SelectArea()
+    {
+        // 节点单体选择
+        bool isOverrapped = false;
+        if (mouseData.IsDown(MouseButton.Left))
+        {
+            foreach (var node in this.nodeList)
+            {
+                if (node.WindowRect.Overlaps(mouseData.rect))
+                {
+                    node.Active = true;
+                    isOverrapped = true;
+
+                    if (selectedNodeList.Count == 0)
+                    {
+                        if (selectedNode != null)
+                        {
+                            if (selectedNode != node)
+                            {
+                                selectedNode.Active = false;
+                            }
+                        }
+                    }
+                    selectedNode = node;
+                    // 选择变焦中心的节点
+                    //gridContorol.GridZoomCenterPoint = mouseData.pos;
+                }
+                else
+                {
+                    if (selectedNodeList.Count == 0)
+                    {
+                        node.Active = false;
+                    }
+                }
+            }
+
+        }
+
+        //------------------------------
+        // 多节点拖尾
+        //------------------------------
+        if (mouseData.IsDrag(MouseButton.Left))
+        {
+            //var find = selectedNodeList.Find(n => n.handle == selectedNode.handle);
+            //if (find == null || selectedNode == null)
+            //{
+            //    ClearSelectedNodes();
+            //}
+            foreach (var node in selectedNodeList)
+            {
+                isOverrapped = true;
+                //if (!node.windowRect.Overlaps(mouseData.rect))
+                if (selectedNode != node)
+                {
+                    node.WindowRect.position += mouseData.delta;
+                }
+                else
+                {
+
+                }
+            }
+        }
+        if (mouseData.IsUp(MouseButton.Left) /*|| mouseData.IsDrag(MouseButton.Left)*/)
+        {
+            // 被选择的人们
+            bool bOtherNodeSelect = true;
+            foreach (var node in selectedNodeList)
+            {
+                if (node.WindowRect.Overlaps(mouseData.rect))
+                {
+                    bOtherNodeSelect = false;
+                }
+            }
+            if (bOtherNodeSelect)
+            {
+                isOverrapped = false;
+                ClearSelectedNodes();
+            }
+        }
+
+        if (isOverrapped)
+        {
+            //CleareSelectArea();
+            return;
+        }
+
+        // 连接中的边缘删除
+        //if (mouseData.IsDown(MouseButton.Left))
+        //{
+        //    if (ActiveEdge != null)
+        //    {
+        //        ActiveEdge.Remove();
+        //        edgeList.Remove(ActiveEdge);
+        //        ActiveEdge = null;
+        //    }
+        //}
+
+        // 范围选择
+        if (mouseData.IsDown(MouseButton.Left))
+        {
+            m_SelectedArea.position = mouseData.pos;
+        }
+        else if (mouseData.IsDrag(MouseButton.Left))
+        {
+            m_SelectedArea.width = mouseData.pos.x - m_SelectedArea.position.x;
+            m_SelectedArea.height = mouseData.pos.y - m_SelectedArea.position.y;
+            Repaint();
+            Debug.Log("拖拽:"+ m_SelectedArea);
+        }
+        else if (mouseData.IsUp(MouseButton.Left))
+        {
+            GUIHelper.RectAdjust(ref m_SelectedArea);
+
+            // 激活选择范围内的节点
+            if ((m_SelectedArea.xMax - m_SelectedArea.xMin) != 0 && (m_SelectedArea.yMax - m_SelectedArea.yMin) != 0)
+            {
+                foreach (var node in this.nodeList)
+                {
+                    if (node.WindowRect.Overlaps(m_SelectedArea))
+                    {
+                        //node.Active = true;
+                        selectedNodeList.Add(node);
+                    }
+                    else
+                    {
+                        node.Active = false;
+                    }
+                }
+            }
+
+            //CleareSelectArea();
+        }
+        else
+        {
+            //CleareSelectArea();
+        }
+
+        // 因为节点拖拽中偶尔会从现点伸长…
+        if (m_SelectedArea.position.x == 0 && m_SelectedArea.position.y == 0)
+        {
+            //CleareSelectArea();
+        }
+    }
+
+    //范围选择到此为止
+    void CleareSelectArea()
+    {
+        m_SelectedArea.width = 0;
+        m_SelectedArea.height = 0;
+        m_SelectedArea.x = 0;
+        m_SelectedArea.y = 0;
+    }
+
+    void ClearSelectedNodes()
+    {
+        foreach (var node in selectedNodeList)
+        {
+            //node.Active = false;
+        }
+        selectedNodeList.Clear();
+    }
+    #endregion 
+
+    #region 鼠标数据更新
+    /// <summary>
+    /// 鼠标数据更新
+    /// </summary>
+    void UpdateMouse()
+    {
+        mouse.pos = Event.current.mousePosition;
+        mouse.delta = Event.current.delta;
+
+        if (Event.current.type == EventType.MouseDown ||
+            Event.current.type == EventType.MouseUp ||
+            Event.current.type == EventType.MouseDrag ||
+            Event.current.type == EventType.ScrollWheel ||
+            Event.current.type == EventType.ContextClick)
+        {
+            mouse.button = (MouseButton)Event.current.button;
+            mouse.type = (MouseEventType)Event.current.type;
+
+            //prevMouse = mouse.Clone();
+        }
+        if (Event.current.type == EventType.MouseMove)
+        {
+            mouse.type = (MouseEventType)Event.current.type;
+            //prevMouse = mouse.Clone(); ;
+        }
+
+        // 在拖拽过程中，如果光标在窗口外的话，请将事件返回。
+        if (Event.current.type == EventType.Ignore)
+        {
+            //mouse = prevMouse.Clone();
+            mouse.type = MouseEventType.Up;
+        }
+    }
+
+    /// <summary>
+    /// 清除鼠标信息
+    /// </summary>
+    void ClearMouse()
+    {
+        mouse.delta = new Vector2(0, 0);
+        mouse.button = MouseButton.None;
+        mouse.type = MouseEventType.None;
     }
     #endregion
 }

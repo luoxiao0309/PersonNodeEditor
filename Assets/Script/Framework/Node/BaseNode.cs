@@ -41,18 +41,37 @@ public abstract class BaseNode:ScriptableObject
     [SerializeField]
     public Rect HandleArea;
     public bool Resizable = false;
-
     
     public GUIStyle nodeStyle { set; get; }
-    /// <summary>
-    /// 选中节点样式
-    /// </summary>
-    public GUIStyle selectNodeStyle { set; get; }
-
+    
     protected Action<ConnectionPoint> onRemoveConnectionPoint;
-
-    public bool isSelected = false;
+    
     public bool isDragged = false;
+    
+    /// <summary>
+    /// 是否激活.
+    /// </summary>
+    private bool active = false;
+    public bool Active
+    {
+        get
+        {
+            return active;
+        }
+        set
+        {
+            if (value)
+            {
+                Debug.LogWarning("选中......");
+                GUI.BringWindowToFront(1);
+            }
+            else
+            {
+                //GUI.BringWindowToBack(handle);
+            }
+            active = value;
+        }
+    }
     #endregion
 
     public BaseNode()
@@ -67,7 +86,7 @@ public abstract class BaseNode:ScriptableObject
 
         if (GUI.Button(new Rect(WindowRect.width - 18, -1, 18, 18), "X"))
         {
-            Debug.LogWarning("拖拽...");
+            Debug.LogWarning("关闭...");
         }
         GUI.backgroundColor = temp;
     }
