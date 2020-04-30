@@ -1,6 +1,8 @@
-﻿using System;
+﻿using AmazingNodeEditor;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,10 +10,6 @@ using UnityEngine;
 public class NodeEditor : EditorWindow
 {
     #region 属性列表
-    /// <summary>
-    /// 鼠标位置
-    /// </summary>
-    Vector3 mousePosition;
     CustomGraph customGraph;
     /// <summary>
     /// 选中窗口
@@ -26,6 +24,7 @@ public class NodeEditor : EditorWindow
     /// 鼠标按下初始位置.
     /// </summary>
     public Vector2 initMousePos = Vector2.zero;
+    public bool dragAccess = false;
     /// <summary>
     /// 重设大小Icon
     /// </summary>
@@ -50,15 +49,14 @@ public class NodeEditor : EditorWindow
     private ConnectionPoint selectedInPoint;
     private ConnectionPoint selectedOutPoint;
     #endregion
-
-    Rect sideWindowRect;
-    Rect scrollViewRect;
+    
     static NodeEditor editorWindow;
-    static Vector2 canvasSize = new Vector2(4000,4000);
-    public Vector2 scrollPos = new Vector2(4000 * 0.5f, 4000 * 0.5f);
-
+    
     private MouseData mouse = new MouseData();
     public MouseData mouseData { get { return mouse; } }
+
+    protected Vector2 offset;
+    protected Vector2 drag;
 
     [MenuItem("自定义/节点")]
     static void ShowEditor()
@@ -149,31 +147,22 @@ public class NodeEditor : EditorWindow
     void OnGUI()
     {
         Event e = Event.current;
-        mousePosition = e.mousePosition;
 
-        DrawBackground();
+        GridDrawer.DrawGrid(20, 0.2f, position, ref offset, ref drag);
+        GridDrawer.DrawGrid(100, 0.4f, position, ref offset, ref drag);
+
+        //DrawBackground();
+
         DrawToolbar();
-
         DrawGroup();
-        //EditorGUILayout.LabelField("", GUILayout.Width(100));
-        //EditorGUILayout.LabelField("Assign Graph", GUILayout.Width(100));
-        //customGraph = EditorGUILayout.ObjectField(customGraph, typeof(CustomGraph), false, GUILayout.Width(200)) as CustomGraph;
-
-        ClearMouse();
-        UpdateMouse();
-
-        Debug.LogWarning("m_SelectedArea:"+ m_SelectedArea);
-        GUIHelper.Fill(m_SelectedArea, new Color(0.5f, 0.5f, 0.5f, 0.5f));
-        Rect pos = m_SelectedArea;
-        GUIHelper.DrawRect(pos, Color.white, 2);
-
-        SelectArea();
+        
+        //绘制选择区域
+        DrawSelectArea();
 
         if (customGraph == null)
         {
             return;
         }
-
 
         //不能使用LeftClick来判断,有问题.
         if (e.IsMouseDownClick())
@@ -190,13 +179,14 @@ public class NodeEditor : EditorWindow
             Repaint();
         }
         #endregion
-        
+
         //绘画窗口(绘制Windows窗口会卡 GUI.changed, 所以你只能不断刷.)
-        this.DrawChildWindow(()=> {
+        this.DrawChildWindow(() =>
+        {
             for (int i = 0; i < customGraph.windows.Count; i++)
             {
                 BaseNode b = customGraph.windows[i];
-                if (b.NodeType==NodeType.Window || b.NodeType == NodeType.InputNode|| b.NodeType == NodeType.CalcNode)
+                if (b.NodeType == NodeType.Window || b.NodeType == NodeType.InputNode || b.NodeType == NodeType.CalcNode)
                 {
                     //b.WindowRect = GUI.Window(i, b.WindowRect,
                     //       DrawNodeWindow, b.windowTitle + ": " + b.id);
@@ -206,7 +196,7 @@ public class NodeEditor : EditorWindow
                     GUIStyle style = new GUIStyle(nodeStyle);
                     b.WindowRect = GUI.Window(i, b.WindowRect, DrawNodeWindow, "", style);
                 }
-                else if(b.NodeType == NodeType.Box)
+                else if (b.NodeType == NodeType.Box)
                 {
                     BoxNode boxBaseNode = customGraph.windows[i] as BoxNode;
                     boxBaseNode.nodeStyle = nodeStyle;
@@ -221,7 +211,7 @@ public class NodeEditor : EditorWindow
             BaseNode b = customGraph.windows[i];
 
             //绘制box矩形连线.
-            if (b.connections.Count>0)
+            if (b.connections.Count > 0)
             {
                 //foreach 一直刷会有问题.
                 for (int m = 0; m < b.connections.Count; m++)
@@ -243,7 +233,7 @@ public class NodeEditor : EditorWindow
                 }
             }
         }
-        
+
         DrawConnectionLine(e);
 
         //在画线时,不响应其他的事件
@@ -251,6 +241,8 @@ public class NodeEditor : EditorWindow
         {
             UserInput(e);
         }
+
+        Repaint();
     }
 
     //绘画窗口函数
@@ -316,7 +308,7 @@ public class NodeEditor : EditorWindow
         if (window.Resizable && (Event.current.type == EventType.MouseDrag))
         {
             ResizeNode(id, Event.current.delta.x, Event.current.delta.y);
-            Repaint();
+            //Repaint();
             //当你已经使用一个事件时调用这个方法。事件的类型将设置为 EventType.Used，使其他GUI元素忽略它。
             Event.current.Use();
         }
@@ -345,7 +337,7 @@ public class NodeEditor : EditorWindow
                     null,
                     4
                 );
-                Repaint();
+                //Repaint();
             }
         }
         if (selectedOutPoint != null && selectedInPoint == null)
@@ -365,7 +357,7 @@ public class NodeEditor : EditorWindow
                     null,
                     4
                 );
-                Repaint();
+                //Repaint();
             }
         }
     }
@@ -391,7 +383,7 @@ public class NodeEditor : EditorWindow
             Debug.LogWarning("删除连续");
         }
 
-        Repaint();
+        //Repaint();
     }
 
     /// <summary>
@@ -413,45 +405,52 @@ public class NodeEditor : EditorWindow
             }
         });
 
-        //拖拽全部节点(整个背景窗口).
-        MouseClickEvent.MouseCenterClick(e, (e1) =>
-        {
-            MouseClickEvent.MouseDownEvent(e1, (e2) =>
-            {
-                initMousePos = e.mousePosition;
-            });
+        ////拖拽全部节点(整个背景窗口).
+        //MouseClickEvent.MouseCenterClick(e, (e1) =>
+        //{
+        //    MouseClickEvent.MouseDownEvent(e1, (e2) =>
+        //    {
+        //        initMousePos = e.mousePosition;
+        //    });
 
-            MouseClickEvent.MouseDragEvent(e1, (e2) =>
+        //    MouseClickEvent.MouseDragEvent(e1, (e2) =>
+        //    {
+        //        Vector2 deltaMousePos = e2.mousePosition - initMousePos;
+        //        for (int i = 0; i < customGraph.windows.Count; i++)
+        //        {
+        //            BaseNode b = customGraph.windows[i];
+        //            b.WindowRect.x += deltaMousePos.x;
+        //            b.WindowRect.y += deltaMousePos.y;
+        //        }
+
+        //        initMousePos = e.mousePosition;
+        //    });
+        //});
+
+        if (mouseData.IsDown(MouseButton.Middle))
+        {
+            dragAccess = true;
+        }
+        if (mouseData.IsUp(MouseButton.Middle))
+        {
+            dragAccess = false;
+        }
+
+        drag = Vector2.zero;
+        if (mouseData.IsDrag(MouseButton.Middle))
+        {
+            drag = e.delta;
+
+            if (customGraph.windows != null)
             {
-                Vector2 deltaMousePos = e2.mousePosition - initMousePos;
-                for (int i = 0; i < customGraph.windows.Count; i++)
+                for (int i = 0; i < customGraph.windows.Count; ++i)
                 {
-                    BaseNode b = customGraph.windows[i];
-                    b.WindowRect.x += deltaMousePos.x;
-                    b.WindowRect.y += deltaMousePos.y;
+                    customGraph.windows[i].Drag(e.delta);
                 }
-
-                initMousePos = e.mousePosition;
-                Repaint();
-            });
-        });
-
-        ProcessNodeEvents(e);
-    }
-
-    /// <summary>
-    /// 节点的鼠标输入事件
-    /// </summary>
-    /// <param name="e"></param>
-    private void ProcessNodeEvents(Event e)
-    {
-        for (int i = 0; i < customGraph.windows.Count; i++)
-        {
-            var window = customGraph.windows[i];
-            window.MouseEvent(e);
+            }
         }
     }
-
+    
     void ResizeNode(int id, float deltaX, float deltaY)
     {
         var windows = customGraph.windows;
@@ -605,6 +604,7 @@ public class NodeEditor : EditorWindow
         Handles.EndGUI();
     }
 
+    #region 工具栏
     /// <summary>
     /// 绘制工具栏
     /// </summary>
@@ -617,7 +617,39 @@ public class NodeEditor : EditorWindow
         {
             customGraph = ScriptableObject.CreateInstance<CustomGraph>();
         }
-        if (GUILayout.Button("Save", EditorStyles.toolbarButton))
+
+        //无法序列化连接，因为它没有无参数的构造函数。
+        if (GUILayout.Button("Save XML", EditorStyles.toolbarButton))
+        {
+            var savePath = EditorUtility.SaveFilePanel(
+                "保存剧情数据",
+                "Assets",
+                "WordEditorData",
+                "xml"
+            );
+
+            FileInfo fileInfo = new FileInfo(savePath);
+            if (fileInfo.Directory.Exists == false)
+            {
+                fileInfo.Directory.Create();
+            }
+            if (fileInfo.Exists == false)
+            {
+                File.Create(savePath).Dispose();
+            }
+
+            if (customGraph != null)
+            {
+                XMLSaver.Serialize(customGraph, savePath);
+            }
+        }
+
+        if (GUILayout.Button("Load XML", EditorStyles.toolbarButton))
+        {
+
+        }
+
+        if (GUILayout.Button("Save Objects", EditorStyles.toolbarButton))
         {
             var savePath = EditorUtility.SaveFilePanel(
                 "保存剧情数据",
@@ -627,10 +659,21 @@ public class NodeEditor : EditorWindow
             );
             savePath = savePath.Substring(Application.dataPath.Length - 6);
             AssetDatabase.CreateAsset(customGraph, savePath);
+            for (int nodeCnt = 0; nodeCnt < customGraph.windows.Count; nodeCnt++)
+            {
+                // Add every node and every of it's inputs/outputs into the file. 
+                // Results in a big mess but there's no other way
+                BaseNode node = customGraph.windows[nodeCnt];
+                AssetDatabase.AddObjectToAsset(node, customGraph);
+                //for (int inCnt = 0; inCnt < node.inputs.Count; inCnt++)
+                //    AssetDatabase.AddObjectToAsset(node.inputs[inCnt], node);
+                //for (int outCnt = 0; outCnt < node.outputs.Count; outCnt++)
+                //    AssetDatabase.AddObjectToAsset(node.outputs[outCnt], node);
+            }
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
-        if (GUILayout.Button("Load", EditorStyles.toolbarButton))
+        if (GUILayout.Button("Load Objects", EditorStyles.toolbarButton))
         {
             var path = EditorUtility.OpenFilePanelWithFilters(
                 "保存剧情数据",
@@ -651,6 +694,30 @@ public class NodeEditor : EditorWindow
         }
         GUILayout.EndHorizontal();
     }
+
+    protected void DrawMenuBar()
+    {
+        float menuBarHeight = 20f;
+        Rect menuBar = new Rect(0, 0, position.width, menuBarHeight);
+
+        GUILayout.BeginArea(menuBar, EditorStyles.toolbar);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button(new GUIContent("Save"), EditorStyles.toolbarButton, GUILayout.Width(35)))
+        {
+            
+        }
+
+        GUILayout.Space(5);
+
+        if (GUILayout.Button(new GUIContent("Load"), EditorStyles.toolbarButton, GUILayout.Width(35)))
+        {
+            
+        }
+
+        GUILayout.EndHorizontal();
+        GUILayout.EndArea();
+    }
+    #endregion
 
     #region 连接点、连接线
     private void OnClickInPoint(ConnectionPoint inPoint)
@@ -844,7 +911,13 @@ public class NodeEditor : EditorWindow
 
     #region 选择区域
     Rect m_SelectedArea;
-    public List<BaseNode> nodeList = new List<BaseNode>();
+    public List<BaseNode> nodeList
+    {
+        get
+        {
+            return customGraph.windows;
+        }
+    }
     public List<BaseNode> selectedNodeList = new List<BaseNode>();
 
     /// <summary>
@@ -860,6 +933,7 @@ public class NodeEditor : EditorWindow
             {
                 if (node.WindowRect.Overlaps(mouseData.rect))
                 {
+                    Debug.LogWarning("区域重叠");
                     node.Active = true;
                     isOverrapped = true;
 
@@ -901,14 +975,9 @@ public class NodeEditor : EditorWindow
             foreach (var node in selectedNodeList)
             {
                 isOverrapped = true;
-                //if (!node.windowRect.Overlaps(mouseData.rect))
                 if (selectedNode != node)
                 {
                     node.WindowRect.position += mouseData.delta;
-                }
-                else
-                {
-
                 }
             }
         }
@@ -932,7 +1001,7 @@ public class NodeEditor : EditorWindow
 
         if (isOverrapped)
         {
-            //CleareSelectArea();
+            CleareSelectArea();
             return;
         }
 
@@ -956,8 +1025,8 @@ public class NodeEditor : EditorWindow
         {
             m_SelectedArea.width = mouseData.pos.x - m_SelectedArea.position.x;
             m_SelectedArea.height = mouseData.pos.y - m_SelectedArea.position.y;
-            Repaint();
-            Debug.Log("拖拽:"+ m_SelectedArea);
+
+            //Repaint();
         }
         else if (mouseData.IsUp(MouseButton.Left))
         {
@@ -970,7 +1039,7 @@ public class NodeEditor : EditorWindow
                 {
                     if (node.WindowRect.Overlaps(m_SelectedArea))
                     {
-                        //node.Active = true;
+                        node.Active = true;
                         selectedNodeList.Add(node);
                     }
                     else
@@ -980,17 +1049,17 @@ public class NodeEditor : EditorWindow
                 }
             }
 
-            //CleareSelectArea();
+            CleareSelectArea();
         }
         else
         {
-            //CleareSelectArea();
+            CleareSelectArea();
         }
 
         // 因为节点拖拽中偶尔会从现点伸长…
         if (m_SelectedArea.position.x == 0 && m_SelectedArea.position.y == 0)
         {
-            //CleareSelectArea();
+            CleareSelectArea();
         }
     }
 
@@ -1007,9 +1076,27 @@ public class NodeEditor : EditorWindow
     {
         foreach (var node in selectedNodeList)
         {
-            //node.Active = false;
+            node.Active = false;
         }
         selectedNodeList.Clear();
+    }
+
+    /// <summary>
+    /// 绘制选择区域.
+    /// </summary>
+    public void DrawSelectArea()
+    {
+        //假如是Drag事件, 这停止在这.
+        if (Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
+        {
+            ClearMouse();
+            UpdateMouse();
+
+            SelectArea();
+        }
+
+        GUIHelper.Fill(m_SelectedArea, new Color(0.5f, 0.5f, 0.5f, 0.5f));
+        GUIHelper.DrawRect(m_SelectedArea, Color.white, 2);
     }
     #endregion 
 

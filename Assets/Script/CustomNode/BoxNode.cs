@@ -12,8 +12,9 @@ public class BoxNode : BoxBaseNode
         
     }
 
-    public new void DrawWindow()
-    {
-        base.DrawWindow();
-    }
+    //public new void DrawWindow()
+    //{
+    //    this.name = "BoxNode";
+    //    base.DrawWindow();
+    //}
 }

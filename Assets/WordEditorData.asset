@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b1e81f1b6234eb4f9cce83a278cef01, type: 3}
+  m_Name: WordEditorData
+  m_EditorClassIdentifier: 
+  windows:
+  - {fileID: 114336109243179488}
+  - {fileID: 114362034584278766}
+  - {fileID: 114866961941146688}
+  IdCount: 3
+--- !u!114 &114336109243179488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe0b125c9216a5944bb51f5cc60a7bdd, type: 3}
+  m_Name: WindowNode
+  m_EditorClassIdentifier: 
+  id: 1
+  WindowRect:
+    serializedVersion: 2
+    x: 1123
+    y: 267
+    width: 200
+    height: 100
+  windowTitle: WindowMenu
+  NodeType: 0
+  childNodes: 
+  connections: []
+  ParentNode: 0
+  HandleArea:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  Resizable: 0
+  isDragged: 0
+--- !u!114 &114362034584278766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe0b125c9216a5944bb51f5cc60a7bdd, type: 3}
+  m_Name: WindowNode
+  m_EditorClassIdentifier: 
+  id: 2
+  WindowRect:
+    serializedVersion: 2
+    x: 1572
+    y: 287
+    width: 200
+    height: 100
+  windowTitle: WindowMenu
+  NodeType: 0
+  childNodes: 
+  connections: []
+  ParentNode: 0
+  HandleArea:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  Resizable: 0
+  isDragged: 0
+--- !u!114 &114866961941146688
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe0b125c9216a5944bb51f5cc60a7bdd, type: 3}
+  m_Name: WindowNode
+  m_EditorClassIdentifier: 
+  id: 3
+  WindowRect:
+    serializedVersion: 2
+    x: 1047
+    y: 570
+    width: 200
+    height: 100
+  windowTitle: WindowMenu
+  NodeType: 0
+  childNodes: 
+  connections: []
+  ParentNode: 0
+  HandleArea:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  Resizable: 0
+  isDragged: 0

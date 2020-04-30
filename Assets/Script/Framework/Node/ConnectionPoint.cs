@@ -24,6 +24,11 @@ public class ConnectionPoint
     /// </summary>
     public Action<ConnectionPoint> OnClickConnectionPoint;
 
+    public ConnectionPoint()
+    {
+
+    }
+
     public ConnectionPoint(
         BaseNode node,
         ConnectionPointType type,

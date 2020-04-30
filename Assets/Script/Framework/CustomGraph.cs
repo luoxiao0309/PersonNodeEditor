@@ -4,12 +4,13 @@ using UnityEngine;
 using System;
 
 [CreateAssetMenu]
+[Serializable]
 public class CustomGraph : ScriptableObject
 {
-    //[SerializeField]
+    [SerializeField]
     public List<BaseNode> windows = new List<BaseNode>();
 
-    //[SerializeField]
+    [SerializeField]
     private int idCount = 1;
     /// <summary>
     /// 显示看的，作为调试使用.

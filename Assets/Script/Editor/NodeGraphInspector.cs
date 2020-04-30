@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UNEB;
 
 [CustomEditor(typeof(NodeGraph))]
 public class NodeGraphInspector : Editor
