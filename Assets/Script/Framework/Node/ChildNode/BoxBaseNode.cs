@@ -35,15 +35,6 @@ public class BoxBaseNode : BaseNode
         outPoints.Add(outPoint);
     }
 
-    /// <summary>
-    /// 拖拽.
-    /// </summary>
-    /// <param name="delta"></param>
-    public new void Drag(Vector2 delta)
-    {
-        WindowRect.position += delta;
-    }
-
     public new void DrawWindow()
     {
         GUI.Box(WindowRect, "", nodeStyle);
@@ -53,7 +44,7 @@ public class BoxBaseNode : BaseNode
         rect2.width -= 20;
         rect2.height -= 23;
         
-        DrawConnectPoint();
+        //DrawConnectPoint();
     }
 
     /// <summary>

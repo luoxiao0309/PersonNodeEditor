@@ -29,10 +29,7 @@ public class ConnectionPoint
 
     }
 
-    public ConnectionPoint(
-        BaseNode node,
-        ConnectionPointType type,
-        GUIStyle style)
+    public ConnectionPoint(BaseNode node, ConnectionPointType type, GUIStyle style)
     {
         this.node = node;
         this.type = type;
@@ -49,20 +46,36 @@ public class ConnectionPoint
         this.OnClickConnectionPoint = onClickConnectionPoint;
     }
 
+    public ConnectionPoint(BaseNode node, ConnectionPointType type, Action<ConnectionPoint> onClickConnectionPoint)
+    {
+        this.node = node;
+        this.type = type;
+        rect = new Rect(0, 0, 20f, 20f);
+        this.OnClickConnectionPoint = onClickConnectionPoint;
+    }
+
     public void Draw()
     {
         rect.y = node.WindowRect.y + (node.WindowRect.height * 0.5f) - rect.height * 0.5f;
         switch (type)
         {
             case ConnectionPointType.In:
-                rect.x = node.WindowRect.x - rect.width + 8f;
+                if (style == null)
+                {
+                    style = EditorStyles.miniButtonLeft;
+                }
+                rect.x = node.WindowRect.x - rect.width;
                 break;
             case ConnectionPointType.Out:
-                rect.x = node.WindowRect.x + node.WindowRect.width - 8f;
+                if (style == null)
+                {
+                    style = EditorStyles.miniButtonRight;
+                }
+                rect.x = node.WindowRect.x + node.WindowRect.width;
                 break;
         }
-
-        if (GUI.Button(rect, "", style))
+        
+        if (GUI.Button(rect, ">", style))
         {
             if (OnClickConnectionPoint != null)
             {

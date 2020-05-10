@@ -256,8 +256,11 @@
     <Compile Include="Assets\Script\CustomNode\2\CalcNode.cs" />
     <Compile Include="Assets\Script\CustomNode\2\InputNode.cs" />
     <Compile Include="Assets\Script\CustomNode\BoxNode.cs" />
+    <Compile Include="Assets\Script\CustomNode\EndNode.cs" />
     <Compile Include="Assets\Script\CustomNode\MenuNode.cs" />
+    <Compile Include="Assets\Script\CustomNode\StartNode.cs" />
     <Compile Include="Assets\Script\CustomNode\WindowNode.cs" />
+    <Compile Include="Assets\Script\DialogEditor.cs" />
     <Compile Include="Assets\Script\Framework\CustomGraph.cs" />
     <Compile Include="Assets\Script\Framework\CustomWindow\NETreeWindow.cs" />
     <Compile Include="Assets\Script\Framework\CustomWindow\NodeEditorWindow.cs" />

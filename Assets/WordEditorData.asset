@@ -15,6 +15,7 @@ MonoBehaviour:
   - {fileID: 114336109243179488}
   - {fileID: 114362034584278766}
   - {fileID: 114866961941146688}
+  idCount: 1
   IdCount: 3
 --- !u!114 &114336109243179488
 MonoBehaviour:
@@ -47,6 +48,8 @@ MonoBehaviour:
     height: 1
   Resizable: 0
   isDragged: 0
+  name22: 
+  iD1: 0
 --- !u!114 &114362034584278766
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61,8 +64,8 @@ MonoBehaviour:
   id: 2
   WindowRect:
     serializedVersion: 2
-    x: 1572
-    y: 287
+    x: 430
+    y: 614
     width: 200
     height: 100
   windowTitle: WindowMenu
@@ -78,6 +81,8 @@ MonoBehaviour:
     height: 1
   Resizable: 0
   isDragged: 0
+  name22: 
+  iD1: 0
 --- !u!114 &114866961941146688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109,3 +114,5 @@ MonoBehaviour:
     height: 1
   Resizable: 0
   isDragged: 0
+  name22: 
+  iD1: 0

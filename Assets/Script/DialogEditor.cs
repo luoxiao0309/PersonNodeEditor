@@ -8,7 +8,7 @@ using UnityEditor.Callbacks;
 using UnityEngine;
 
 
-public class NodeEditor : EditorWindow
+public class DialogNodeEditor : EditorWindow
 {
     #region 属性列表
     CustomGraph customGraph;
@@ -50,8 +50,10 @@ public class NodeEditor : EditorWindow
     private ConnectionPoint selectedInPoint;
     private ConnectionPoint selectedOutPoint;
     #endregion
-    
-    static NodeEditor editorWindow;
+
+    private List<Connection> connections = new List<Connection>();
+
+    static DialogNodeEditor editorWindow;
     
     private MouseData mouse = new MouseData();
     public MouseData mouseData { get { return mouse; } }
@@ -59,10 +61,22 @@ public class NodeEditor : EditorWindow
     protected Vector2 offset;
     protected Vector2 drag;
 
-    [MenuItem("自定义/节点")]
+    [MenuItem("自定义/对话框")]
     static void ShowEditor()
     {
-        editorWindow = EditorWindow.GetWindow<NodeEditor>();
+        editorWindow = EditorWindow.GetWindow<DialogNodeEditor>();
+    }
+
+    public static DialogNodeEditor Instance
+    {
+        get
+        {
+            if (editorWindow==null)
+            {
+                editorWindow = EditorWindow.GetWindow<DialogNodeEditor>();
+            }
+            return editorWindow;
+        }
     }
 
     private void OnEnable()
@@ -71,27 +85,7 @@ public class NodeEditor : EditorWindow
         Texture2D resizeHandle = EditorGUIUtility.Load("ResizeHandle.png") as Texture2D;
         //Texture2D resizeHandle = AssetDatabase.LoadAssetAtPath("Assets/Node/Textures/PNG/ResizeHandle.png", typeof(Texture2D)) as Texture2D;
         _resizeIcon = new GUIContent(resizeHandle);
-        //if (graphNode == null)
-        //{
-        //    graphNode = CreateInstance<GraphNode>();
-        //    graphNode.windowRect = new Rect(10, position.height * .7f, 200, 100);
-        //    graphNode.windowTitle = "Graph";
-        //}
-        //customGraph = Resources.Load("CustomGraph") as CustomGraph;
-        //style = settings.skin.GetStyle("window");
-        //activeStyle = settings.activeSkin.GetStyle("window");
-
-        //inPointStyle = new GUIStyle();
-        //inPointStyle.normal.background = EditorGUIUtility.Load("joinL.png") as Texture2D;
-        //inPointStyle.active.background = EditorGUIUtility.Load("joinL.png") as Texture2D;
-        //inPointStyle.border = new RectOffset(4, 4, 12, 12);
-
-        //StyleHelper.inStyle = inPointStyle;
-
-        //outPointStyle = new GUIStyle();
-        //outPointStyle.normal.background = EditorGUIUtility.Load("joinR.png") as Texture2D;
-        //outPointStyle.active.background = EditorGUIUtility.Load("joinR.png") as Texture2D;
-        //outPointStyle.border = new RectOffset(4, 4, 12, 12);
+        
 
         #region 节点样式
         //nodeStyle = new GUIStyle();
@@ -124,23 +118,6 @@ public class NodeEditor : EditorWindow
         selectedNodeStyle.border = new RectOffset(12, 12, 12, 12);
         #endregion
     }
-
-    //private void Update()
-    //{
-    //    if (listDeleteNodes.Count>0)
-    //    {
-    //        customGraph.ClearWindows(listDeleteNodes);
-    //        listDeleteNodes.Clear();
-    //    }
-    //}
-
-    //private void OnDestroy()
-    //{
-    //    if (customGraph!=null)
-    //    {
-    //        EditorUtility.SetDirty(customGraph);
-    //    }
-    //}
     
     /// <summary>
     /// 添加子窗口只能在OnGUI下绘制
@@ -155,7 +132,7 @@ public class NodeEditor : EditorWindow
         //DrawBackground();
 
         DrawToolbar();
-        DrawGroup();
+        //DrawGroup();
         
         //绘制选择区域
         DrawSelectArea();
@@ -187,53 +164,29 @@ public class NodeEditor : EditorWindow
             for (int i = 0; i < customGraph.windows.Count; i++)
             {
                 BaseNode b = customGraph.windows[i];
-                b.InitData();
 
-                if (b.NodeType == NodeType.Window || b.NodeType == NodeType.InputNode || b.NodeType == NodeType.CalcNode)
+                if (b.NodeType == NodeType.StartNode)
                 {
-                    //b.WindowRect = GUI.Window(i, b.WindowRect,
-                    //       DrawNodeWindow, b.windowTitle + ": " + b.id);
-
-                    string nodeStyle = "flow node 0";
-                    if (b.Active) nodeStyle += " on";
-                    GUIStyle style = new GUIStyle(nodeStyle);
-                    b.WindowRect = GUI.Window(i, b.WindowRect, DrawNodeWindow, "", style);
+                    StartNode boxBaseNode = b as StartNode;
+                    boxBaseNode.InitData();
+                    boxBaseNode.DrawWindow();
                 }
-                else if (b.NodeType == NodeType.Box)
+                else if (b.NodeType == NodeType.EndNode)
                 {
-                    BoxNode boxBaseNode = customGraph.windows[i] as BoxNode;
-                    boxBaseNode.nodeStyle = nodeStyle;
+                    EndNode boxBaseNode = b as EndNode;
+                    boxBaseNode.InitData();
                     boxBaseNode.DrawWindow();
                 }
             }
         });
 
-        //绘制连线
-        for (int i = 0; i < customGraph.windows.Count; i++)
+        ProcessNodes(e);
+        if (connections.Count>0)
         {
-            BaseNode b = customGraph.windows[i];
-
-            //绘制box矩形连线.
-            if (b.connections.Count > 0)
+            for (int m = 0; m < connections.Count; m++)
             {
-                //foreach 一直刷会有问题.
-                for (int m = 0; m < b.connections.Count; m++)
-                {
-                    var item = b.connections[m];
-                    item.Draw();
-                }
-            }
-            else
-            {
-                //绘制窗口连线
-                if (b.childNodes.Count > 0)
-                {
-                    foreach (var nodeId in b.childNodes)
-                    {
-                        var item = customGraph.GetBaseNodeById(nodeId);
-                        DrawNodeCurve(b.WindowRect, item.WindowRect, Color.blue);
-                    }
-                }
+                var item = connections[m];
+                item.Draw();
             }
         }
 
@@ -247,6 +200,23 @@ public class NodeEditor : EditorWindow
 
         Repaint();
     }
+
+    private void ProcessNodes(Event e)
+    {
+        if (customGraph.windows != null)
+        {
+            for (int i = customGraph.windows.Count - 1; i >= 0; i--)
+            {
+                bool guiChanged = customGraph.windows[i].ProcessEvents(e);
+
+                //if (guiChanged) {
+                //    GUI.changed = true;
+                //}
+            }
+        }
+    }
+
+
 
     //绘画窗口函数
     void DrawNodeWindow(int id)
@@ -452,8 +422,33 @@ public class NodeEditor : EditorWindow
                 }
             }
         }
+
+        #region 拖拽单个节点
+        //if (mouseData.IsDown(MouseButton.Left))
+        //{
+        //    if (selectedNode)
+        //        initMousePos = e.mousePosition;
+        //}
+
+        //if (Event.current.type == EventType.MouseDrag)
+        //{
+        //    if (Event.current.IsMouseLeftClick())
+        //    {
+        //        if (selectedNode)
+        //        {
+        //            Vector2 deltaMousePos = e.mousePosition - initMousePos;
+        //            selectedNode.Drag(deltaMousePos);
+        //            //持续Repaint下,是不行的.
+        //            //selectedNode.Drag(e.delta);
+        //            initMousePos = e.mousePosition;
+        //        }
+
+        //        Event.current.Use();
+        //    }
+        //}
+        #endregion
     }
-    
+
     void ResizeNode(int id, float deltaX, float deltaY)
     {
         var windows = customGraph.windows;
@@ -502,28 +497,15 @@ public class NodeEditor : EditorWindow
         GenericMenu menu = new GenericMenu();
         menu.AddSeparator("");
         
-        menu.AddItem(new GUIContent("Add WindowNode"), false, () =>
+        menu.AddItem(new GUIContent("Add STARTNode"), false, () =>
         {
-            customGraph.AddWindowNode(200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y));
+            customGraph.AddCustomwNode<StartNode>(200, 100, "STARTNode", new Vector3(e.mousePosition.x, e.mousePosition.y),NodeType.StartNode);
         });
-        menu.AddItem(new GUIContent("Add MenuNode"), false, () =>
+        menu.AddItem(new GUIContent("Add ENDNode"), false, () =>
         {
-            customGraph.AddMenuWindowNode(200, 100, "MenuNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
+            customGraph.AddCustomwNode<EndNode>(200, 100, "ENDNode", new Vector3(e.mousePosition.x, e.mousePosition.y), NodeType.EndNode);
         });
-        menu.AddItem(new GUIContent("Add InputNode"), false, () =>
-        {
-            customGraph.AddInputNode(200, 100, "InputNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
-        });
-        menu.AddItem(new GUIContent("Add CalcNode"), false, () =>
-        {
-            customGraph.AddCalcNodeNode(200, 100, "CalcNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
-        });
-        menu.AddItem(new GUIContent("Add BoxNode"), false, () =>
-        {
-            //var boxNode = ScriptableObject.CreateInstance<BoxNode>();
-            BaseNode baseNode = customGraph.AddBoxNode(200, 100, "WindowMenu", new Vector3(e.mousePosition.x, e.mousePosition.y), inPointStyle, outPointStyle, OnClickInPoint, OnClickOutPoint, NodeType.Box);
-            baseNode.nodeStyle = nodeStyle;
-        });
+
         menu.ShowAsContext();
         //e.Use();
     }
@@ -550,11 +532,6 @@ public class NodeEditor : EditorWindow
             //AssetDatabase.SaveAssets();
 
             selectedNode = null;
-        });
-        menu.AddItem(new GUIContent("Add Window"), false, () => {
-            BaseNode baseNode = customGraph.AddWindowNode(200, 100, "TestNode", new Vector3(e.mousePosition.x, e.mousePosition.y));
-            selectedNode.childNodes.Add(baseNode.id);
-            baseNode.ParentNode = selectedNode.id;
         });
         
         menu.AddItem(new GUIContent("画线"), false, () => {
@@ -620,7 +597,7 @@ public class NodeEditor : EditorWindow
         var graph = obj as CustomGraph;
         if (graph != null)
         {
-            var window = GetWindow<NodeEditor>();
+            var window = GetWindow<DialogNodeEditor>();
             window.customGraph = graph;
             window.minSize = new Vector2(500, 350);
             window.titleContent = new GUIContent("Node Editor");
@@ -762,25 +739,22 @@ public class NodeEditor : EditorWindow
     public void OnClickInPoint(ConnectionPoint inPoint)
     {
         selectedInPoint = inPoint;
-        Debug.LogWarning("OnClickInPoint");
-
         if (selectedOutPoint != null)
         {
             if (selectedOutPoint.node != selectedInPoint.node)
             {
                 CreateConnection();
-                ClearConnectionSelection();
             }
-            else
-            {
-                ClearConnectionSelection();
-            }
+            ClearConnectionSelection();
         }
 
         //使用当前事件,阻止其他事件响应.
         Event.current.Use();
     }
-
+    /// <summary>
+    /// 输出连接点
+    /// </summary>
+    /// <param name="outPoint"></param>
     public void OnClickOutPoint(ConnectionPoint outPoint)
     {
         selectedOutPoint = outPoint;
@@ -789,20 +763,17 @@ public class NodeEditor : EditorWindow
             if (selectedOutPoint.node != selectedInPoint.node)
             {
                 CreateConnection();
-                ClearConnectionSelection();
             }
-            else
-            {
-                ClearConnectionSelection();
-            }
+            ClearConnectionSelection();
         }
         Event.current.Use();
     }
 
     private void CreateConnection()
     {
-        Connection connection = new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection);
-        selectedInPoint.node.AddConnection(connection);
+        //Connection connection = new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection);
+        //selectedInPoint.node.AddConnection(connection);
+        connections.Add(new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection));
     }
 
     private void ClearConnectionSelection()
@@ -813,7 +784,7 @@ public class NodeEditor : EditorWindow
 
     private void OnClickRemoveConnection(Connection connection)
     {
-        connection.inPoint.node.RemoveConnection(connection);
+        connections.Remove(connection);
         Event.current.Use();
     }
     #endregion

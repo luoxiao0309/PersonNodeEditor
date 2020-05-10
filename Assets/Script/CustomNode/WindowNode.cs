@@ -5,9 +5,6 @@ using UnityEngine;
 [System.Serializable]
 public class WindowNode : BaseNode
 {
-    //public override void DrawWindow()
-    //{
-    //    this.name = "WindowNode";
-    //    base.DrawWindow();
-    //}
+    public string name22;
+    public float iD1;
 }

@@ -111,7 +111,6 @@ public class NETreeWindow : EditorWindow
         Rect titleRect = new Rect(0, 0, position.width, titleHeight);
         m_cToolBarBtnStyle.fixedHeight = titleRect.height;
         m_cToolBarPopupStyle.fixedHeight = titleRect.height;
-        Debug.LogWarning("titleRect:" + titleRect);
         //水平区域
         GUILayout.BeginArea(titleRect);
         //GUILayout.Label("", tt,GUILayout.Width(50),GUILayout.Height(20));
@@ -173,7 +172,7 @@ public class NETreeWindow : EditorWindow
 
         if (GUI.Button(rect, "", style))
         {
-            Debug.LogWarning("ddds");
+            //Debug.LogWarning("ddds");
         }
     }
 }

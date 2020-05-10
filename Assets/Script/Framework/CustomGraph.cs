@@ -17,7 +17,23 @@ public class CustomGraph : ScriptableObject
     /// </summary>
     [SerializeField]
     public int IdCount = 1;
-    
+
+    public BaseNode AddCustomwNode<T>(float width, float height, string title, Vector3 pos, NodeType nodeType) where T:BaseNode
+    {
+        T baseNode = ScriptableObject.CreateInstance<T>();
+        baseNode.WindowRect.width = width;
+        baseNode.WindowRect.height = height;
+        baseNode.windowTitle = title;
+        baseNode.WindowRect.x = pos.x;
+        baseNode.WindowRect.y = pos.y;
+        baseNode.id = idCount;
+        baseNode.NodeType = nodeType;
+        windows.Add(baseNode);
+        IdCount = idCount;
+        idCount++;
+        return baseNode;
+    }
+
     public BaseNode AddWindowNode(float width, float height, string title, Vector3 pos, NodeType nodeType=NodeType.Window)
     {
         WindowNode baseNode = ScriptableObject.CreateInstance<WindowNode>();
@@ -28,7 +44,6 @@ public class CustomGraph : ScriptableObject
         baseNode.WindowRect.y = pos.y;
         baseNode.id = idCount;
         baseNode.NodeType = nodeType;
-        //baseNode.InitInOut();
         windows.Add(baseNode);
         IdCount = idCount;
         idCount++;

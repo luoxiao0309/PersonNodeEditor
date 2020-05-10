@@ -29,6 +29,5 @@ public class MenuNode : BaseNode
 
         //controlledObject = (GameObject)EditorGUILayout.ObjectField(controlledObject, typeof(GameObject), true);
         base.DrawWindow();
-        GUI.Button(new Rect(0,32,20,20),"ss");
     }
 }

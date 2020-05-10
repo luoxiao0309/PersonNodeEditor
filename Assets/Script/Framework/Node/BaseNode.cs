@@ -11,6 +11,8 @@ public enum NodeType
     InputNode,
     CalcNode,
     Box,
+    StartNode,
+    EndNode
 }
 
 /// <summary>
@@ -18,8 +20,7 @@ public enum NodeType
 /// </summary>
 
 [System.Serializable]
-[CreateAssetMenu]
-public abstract class BaseNode:ScriptableObject
+public abstract class BaseNode : ScriptableObject
 {
     #region 属性
     public int id;
@@ -43,14 +44,17 @@ public abstract class BaseNode:ScriptableObject
     [SerializeField]
     public Rect HandleArea;
     public bool Resizable = false;
-
+    public GUIStyle Style = new GUIStyle();
     [NonSerialized]
     public GUIStyle nodeStyle;
     
     protected Action<ConnectionPoint> onRemoveConnectionPoint;
     
     public bool isDragged = false;
-    
+
+    public SerializedObject serializedObject;
+    private List<string> excludes = new List<string>();
+
     /// <summary>
     /// 是否激活.
     /// </summary>
@@ -76,6 +80,35 @@ public abstract class BaseNode:ScriptableObject
     }
     #endregion
     
+    public void InitData()
+    {
+        serializedObject = new SerializedObject(this);
+        excludes.Add("m_Script");
+        excludes.Add("id");
+        excludes.Add("WindowRect");
+        excludes.Add("windowTitle");
+        excludes.Add("NodeType");
+        excludes.Add("childNodes");
+        excludes.Add("connections");
+        excludes.Add("ParentNode");
+        excludes.Add("HandleArea");
+        excludes.Add("Resizable");
+        excludes.Add("isDragged");
+
+        SetStyle();
+        SetData();
+    }
+
+    public virtual void SetStyle()
+    {
+
+    }
+
+    public virtual void SetData()
+    {
+
+    }
+
     public virtual void DrawWindow()
     {
         this.name = this.GetType().ToString();
@@ -87,6 +120,26 @@ public abstract class BaseNode:ScriptableObject
             Debug.LogWarning("关闭...");
         }
         GUI.backgroundColor = temp;
+
+        // Grab the latest data from the object
+        //从对象抓取的最新数据
+        serializedObject.Update();
+
+        SerializedProperty iterator = serializedObject.GetIterator();
+        bool enterChildren = true;
+        EditorGUIUtility.labelWidth = 84;
+
+        while (iterator.NextVisible(enterChildren))
+        {
+            enterChildren = false;
+            if (excludes.Contains(iterator.name))
+            {
+                continue;
+            }
+            
+            EditorGUILayout.PropertyField(iterator, true);
+        }
+        serializedObject.ApplyModifiedProperties();
     }
 
     public virtual void DrawCurve()
@@ -94,12 +147,6 @@ public abstract class BaseNode:ScriptableObject
 
     }
     
-
-    public void WindowMenu(Event e,Action<Event> SelectEvent, Action<Event> UnSelect)
-    {
-
-    }
-
     private void ProcessContextMenu()
     {
         GenericMenu genericMenu = new GenericMenu();
@@ -133,5 +180,41 @@ public abstract class BaseNode:ScriptableObject
     public void RemoveConnection(Connection connection)
     {
         connections.Remove(connection);
+    }
+
+    public bool ProcessEvents(Event e)
+    {
+        ProcessDefault(e);
+        return false;
+    }
+
+    public virtual bool ProcessDefault(Event e)
+    {
+        //adds clickdrag
+        switch (e.type)
+        {
+            case EventType.MouseDown:
+                if (e.button == 0)
+                {
+                    if (WindowRect.Contains(e.mousePosition))
+                    {
+                        isDragged = true;
+                    }
+                }
+                break;
+            case EventType.MouseUp:
+                isDragged = false;
+                break;
+            case EventType.MouseDrag:
+                if (e.button == 0 && isDragged)
+                {
+                    Drag(e.delta);
+                    e.Use();
+                    return true;
+                }
+                break;
+        }
+
+        return false;
     }
 }
