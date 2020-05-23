@@ -10,31 +10,37 @@ public enum ConnectionPointType { In, Out }
 /// 连接点.
 /// </summary>
 [Serializable]
-public class ConnectionPoint
+public class ConnectionPoint:ScriptableObject
 {
-    public Rect rect;
+    public Rect pointRect
+    {
+        set
+        {
+            rect = value;
+        }
+        get
+        {
+            return rect;
+        }
+    }
+    private Rect rect;
     public Vector2 offset;
     public ConnectionPointType type;
     [SerializeField]
     public BaseNode node;
     public GUIStyle style;
-
+    
     /// <summary>
     /// 连接点点击事件.
     /// </summary>
     public Action<ConnectionPoint> OnClickConnectionPoint;
 
-    public ConnectionPoint()
+    public static ConnectionPoint CreateConnectionPoint(BaseNode node, ConnectionPointType type, Action<ConnectionPoint> onClickConnectionPoint)
     {
-
-    }
-
-    public ConnectionPoint(BaseNode node, ConnectionPointType type, GUIStyle style)
-    {
-        this.node = node;
-        this.type = type;
-        this.style = style;
-        rect = new Rect(0, 0, 10f, 20f);
+        ConnectionPoint connPoint = ScriptableObject.CreateInstance<ConnectionPoint>();
+        connPoint.InitData(node, type, onClickConnectionPoint);
+        connPoint.name = node.GetType().ToString() + "_" + type.ToString();
+        return connPoint;
     }
 
     public ConnectionPoint(BaseNode node, ConnectionPointType type, GUIStyle style, Action<ConnectionPoint> onClickConnectionPoint)
@@ -46,7 +52,7 @@ public class ConnectionPoint
         this.OnClickConnectionPoint = onClickConnectionPoint;
     }
 
-    public ConnectionPoint(BaseNode node, ConnectionPointType type, Action<ConnectionPoint> onClickConnectionPoint)
+    public void InitData(BaseNode node, ConnectionPointType type, Action<ConnectionPoint> onClickConnectionPoint)
     {
         this.node = node;
         this.type = type;
@@ -74,8 +80,42 @@ public class ConnectionPoint
                 rect.x = node.WindowRect.x + node.WindowRect.width;
                 break;
         }
+
+        //GUI.Button(new Rect(200, 50, 30, 30), ">", EditorStyles.miniButtonLeft);
+        if (GUI.Button(rect, ">", EditorStyles.miniButtonRight))
+        {
+            if (OnClickConnectionPoint != null)
+            {
+                OnClickConnectionPoint(this);
+            }
+        }
+    }
+
+    public void Draw(Rect customRect)
+    {
+        rect.x = customRect.x;
+        rect.y = customRect.y;
+        rect.height = 20;
+        rect.width = 20;
         
-        if (GUI.Button(rect, ">", style))
+        //GUI.Button(new Rect(200, 50, 30, 30), ">", EditorStyles.miniButtonLeft);
+        if (GUI.Button(rect, ">", EditorStyles.miniButtonRight))
+        {
+            if (OnClickConnectionPoint != null)
+            {
+                OnClickConnectionPoint(this);
+            }
+        }
+    }
+
+    public void SetRect(Rect customRect)
+    {
+        rect = customRect;
+    }
+
+    public void DrawLayout(float height=20)
+    {
+        if (GUILayout.Button( ">", EditorStyles.miniButtonRight,GUILayout.Height(height)))
         {
             if (OnClickConnectionPoint != null)
             {

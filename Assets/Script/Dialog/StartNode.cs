@@ -10,9 +10,17 @@ public class StartNode : BaseNode
     public ConnectionPoint startPoint;
     public override void DrawWindow()
     {
+        //GUI.Box(WindowRect,"", Style);
+        //GUI.Label(WindowRect, "Start", Style);
+        //GUILayout.BeginArea(WindowRect);
+        //GUI.BeginArea(WindowRect,Style);
+        GUILayout.Label("Start");
+        //GUI.EndArea();
+    }
+
+    public override void DrawConnectionPoint()
+    {
         startPoint.Draw();
-        GUI.Box(WindowRect,"", Style);
-        GUI.Label(WindowRect, "Start", Style);
     }
 
     public override void SetStyle()
@@ -24,8 +32,9 @@ public class StartNode : BaseNode
         Style.alignment = TextAnchor.MiddleCenter;
     }
 
-    public override void SetData()
+    public void SetData()
     {
-        startPoint = new ConnectionPoint(this, ConnectionPointType.Out, DialogNodeEditor.Instance.OnClickOutPoint);
+        this.NodeType = NodeType.Window;
+        startPoint = ConnectionPoint.CreateConnectionPoint(this, ConnectionPointType.Out, customGraph.OnClickOutPoint);
     }
 }

@@ -263,7 +263,7 @@ public class NodeEditor : EditorWindow
         style.fixedHeight = titleHeight; // バー高さ
         var temp = GUI.backgroundColor;
         GUI.color = new Color(0.4f, 0.6f, 1.0f, 1.0f);
-        GUI.Label(title, window.windowTitle, style);
+        GUI.Label(title, window.WindowTitle, style);
         GUI.color = temp;
 
         window.DrawWindow();
@@ -332,9 +332,9 @@ public class NodeEditor : EditorWindow
             else
             {
                 Handles.DrawBezier(
-                    selectedInPoint.rect.center,
+                    selectedInPoint.pointRect.center,
                     e.mousePosition,
-                    selectedInPoint.rect.center + Vector2.left * 50f,
+                    selectedInPoint.pointRect.center + Vector2.left * 50f,
                     e.mousePosition - Vector2.left * 50f,
                     Color.white,
                     null,
@@ -352,9 +352,9 @@ public class NodeEditor : EditorWindow
             else
             {
                 Handles.DrawBezier(
-                    selectedOutPoint.rect.center,
+                    selectedOutPoint.pointRect.center,
                     e.mousePosition,
-                    selectedOutPoint.rect.center - Vector2.left * 50f,
+                    selectedOutPoint.pointRect.center - Vector2.left * 50f,
                     e.mousePosition + Vector2.left * 50f,
                     Color.white,
                     null,
@@ -801,8 +801,8 @@ public class NodeEditor : EditorWindow
 
     private void CreateConnection()
     {
-        Connection connection = new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection);
-        selectedInPoint.node.AddConnection(connection);
+        //Connection connection = new Connection(selectedInPoint, selectedOutPoint, OnClickRemoveConnection);
+        //selectedInPoint.node.AddConnection(connection);
     }
 
     private void ClearConnectionSelection()

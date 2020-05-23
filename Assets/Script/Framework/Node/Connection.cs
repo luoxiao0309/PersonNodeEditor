@@ -5,20 +5,36 @@ using UnityEditor;
 using UnityEngine;
 
 [System.Serializable]
-public class Connection
+public class Connection:ScriptableObject
 {
     [SerializeField]
     public ConnectionPoint inPoint;
     [SerializeField]
     public ConnectionPoint outPoint;
     public Action<Connection> OnClickRemoveConnection;
-
-    public Connection()
+    
+    public bool ExistConnectionPoint(ConnectionPoint connectionPoint)
     {
-
+        if (inPoint==connectionPoint)
+        {
+            return true;
+        }
+        else if (outPoint == connectionPoint)
+        {
+            return true;
+        }
+        return false;
     }
 
-    public Connection(ConnectionPoint inPoint, ConnectionPoint outPoint, Action<Connection> OnClickRemoveConnection)
+    public static Connection CreateConnection(ConnectionPoint inPoint, ConnectionPoint outPoint, Action<Connection> OnClickRemoveConnection)
+    {
+        Connection conn = ScriptableObject.CreateInstance<Connection>();
+        conn.name = "Connection";
+        conn.InitData(inPoint, outPoint, OnClickRemoveConnection);
+        return conn;
+    }
+
+    public void InitData(ConnectionPoint inPoint, ConnectionPoint outPoint, Action<Connection> OnClickRemoveConnection)
     {
         this.inPoint = inPoint;
         this.outPoint = outPoint;
@@ -28,15 +44,15 @@ public class Connection
     public void Draw()
     {
         Handles.DrawBezier(
-            inPoint.rect.center,
-            outPoint.rect.center,
-            inPoint.rect.center + Vector2.left * 50f,
-            outPoint.rect.center - Vector2.left * 50f,
+            inPoint.pointRect.center,
+            outPoint.pointRect.center,
+            inPoint.pointRect.center + Vector2.left * 50f,
+            outPoint.pointRect.center - Vector2.left * 50f,
             Color.white,
             null,
             2f);
         
-        if (Handles.Button((inPoint.rect.center + outPoint.rect.center) * 0.5f, Quaternion.identity, 4, 8, Handles.RectangleHandleCap))
+        if (Handles.Button((inPoint.pointRect.center + outPoint.pointRect.center) * 0.5f, Quaternion.identity, 4, 8, Handles.RectangleHandleCap))
         {
             if (OnClickRemoveConnection != null)
             {

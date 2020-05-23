@@ -8,11 +8,15 @@ using UnityEngine;
 public class EndNode : BaseNode
 {
     public ConnectionPoint endPoint;
+
     public override void DrawWindow()
     {
+        GUILayout.Label("");
+    }
+
+    public override void DrawConnectionPoint()
+    {
         endPoint.Draw();
-        GUI.Box(WindowRect,"", Style);
-        GUI.Label(WindowRect, "END", Style);
     }
 
     public override void SetStyle()
@@ -24,8 +28,8 @@ public class EndNode : BaseNode
         Style.alignment = TextAnchor.MiddleCenter;
     }
 
-    public override void SetData()
+    public void SetData()
     {
-        endPoint = new ConnectionPoint(this, ConnectionPointType.In, DialogNodeEditor.Instance.OnClickInPoint);
+        endPoint = ConnectionPoint.CreateConnectionPoint(this, ConnectionPointType.In, customGraph.OnClickInPoint);
     }
 }
